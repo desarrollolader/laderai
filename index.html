@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prometeo CRM</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root {
+  --bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a24;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#f0f0f5;--text2:#9090a8;--text3:#5a5a72;
+  --accent:#6c5ce7;--accent2:#a29bfe;
+  --green:#00b894;--amber:#fdcb6e;--red:#e17055;--blue:#74b9ff;
+  --radius:12px;--radius-sm:8px;
+}
+[data-theme="light"] {
+  --bg:#f0f2f5;--bg2:#ffffff;--bg3:#f0f2f5;
+  --border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.13);
+  --text:#1a1a2e;--text2:#4a4a6a;--text3:#8888a8;
+  --accent:#6c5ce7;--accent2:#5a4bd4;
+  --green:#00976e;--amber:#b88a00;--red:#c0502e;--blue:#2472c8;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;font-size:14px;}
+
+/* AUTH */
+#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);}
+.auth-box{width:400px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:40px;}
+.auth-logo{text-align:center;margin-bottom:28px;}
+.auth-logo-icon{width:52px;height:52px;background:var(--accent);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px;}
+.auth-title{font-size:22px;font-weight:600;letter-spacing:-.5px;}
+.auth-sub{font-size:13px;color:var(--text3);margin-top:4px;}
+.auth-tabs{display:flex;background:var(--bg3);border-radius:var(--radius-sm);padding:3px;margin-bottom:24px;}
+.auth-tab{flex:1;text-align:center;padding:7px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);transition:all .15s;}
+.auth-tab.active{background:var(--bg2);color:var(--text);}
+.form-group{margin-bottom:14px;}
+.form-label{font-size:11px;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;display:block;}
+input,select,textarea{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);font-size:13px;outline:none;width:100%;transition:border-color .15s;font-family:inherit;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text);transition:all .15s;font-family:inherit;}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:white;}
+.btn-primary:hover{background:#5a4bd4;}
+.btn-full{width:100%;}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.msg-box{border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;margin-bottom:14px;display:none;}
+.msg-error{background:rgba(225,112,85,.15);color:var(--red);}
+.msg-success{background:rgba(0,184,148,.15);color:var(--green);}
+.auth-footer{text-align:center;margin-top:16px;font-size:12px;color:var(--text3);}
+.auth-link{color:var(--accent2);cursor:pointer;text-decoration:underline;}
+
+/* APP */
+#app-screen{display:none;height:100vh;overflow:hidden;flex-direction:column;}
+.topnav{height:52px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;}
+.topnav-logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;}
+.topnav-logo-icon{width:28px;height:28px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;}
+.topnav-sep{width:1px;height:20px;background:var(--border2);}
+.empresa-name{font-size:13px;color:var(--text2);}
+.topnav-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.user-badge{font-size:12px;color:var(--text3);}
+.logout-btn{background:none;border:1px solid var(--border2);border-radius:var(--radius-sm);padding:5px 10px;color:var(--text3);cursor:pointer;font-size:12px;font-family:inherit;}
+
+/* LAYOUT */
+.app-body{display:flex;flex:1;overflow:hidden;}
+.sidebar{width:210px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+.nav{padding:10px 8px;flex:1;}
+.nav-section{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);padding:12px 10px 5px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--radius-sm);cursor:pointer;color:var(--text2);font-size:13px;transition:all .12s;}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{background:rgba(108,92,231,.15);color:var(--accent2);}
+.nav-item i{font-size:16px;}
+.nav-badge{margin-left:auto;background:var(--accent);color:white;font-size:10px;padding:2px 6px;border-radius:20px;}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.page-header{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--bg2);flex-shrink:0;}
+.page-title{font-size:14px;font-weight:500;flex:1;}
+.content{flex:1;overflow-y:auto;padding:20px 22px;}
+.section{display:none;}
+.section.active{display:block;}
+
+/* CARDS / METRICS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px;}
+.card-title{font-size:11px;font-weight:500;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:14px;}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.metric{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+.metric-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+.metric-value{font-size:26px;font-weight:300;letter-spacing:-1px;}
+.metric-sub{font-size:11px;color:var(--text3);margin-top:3px;}
+
+/* TABLE */
+.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+table{width:100%;border-collapse:collapse;}
+th{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);}
+td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--bg3);}
+.td-primary{color:var(--text);font-weight:500;}
+.empty-state{text-align:center;padding:40px;color:var(--text3);}
+.empty-state i{font-size:32px;display:block;margin-bottom:10px;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;}
+.badge-green{background:rgba(0,184,148,.15);color:var(--green);}
+.badge-amber{background:rgba(253,203,110,.15);color:var(--amber);}
+.badge-red{background:rgba(225,112,85,.15);color:var(--red);}
+.badge-blue{background:rgba(116,185,255,.15);color:var(--blue);}
+.badge-purple{background:rgba(108,92,231,.15);color:var(--accent2);}
+.avatar{width:30px;height:30px;border-radius:50%;background:rgba(108,92,231,.2);color:var(--accent2);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-full{grid-column:1/-1;}
+.form-gi{display:flex;flex-direction:column;gap:6px;}
+textarea{resize:vertical;min-height:80px;}
+.form-actions{display:flex;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);}
+.form-actions .btn{width:auto;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:100;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:24px;width:580px;max-height:85vh;overflow-y:auto;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.modal-title{font-size:15px;font-weight:500;}
+.modal-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1;padding:0;}
+
+/* TOGGLE */
+.toggle{width:34px;height:18px;background:var(--bg3);border:1px solid var(--border2);border-radius:20px;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;display:inline-block;}
+.toggle.on{background:var(--accent);border-color:var(--accent);}
+.toggle::after{content:'';position:absolute;width:12px;height:12px;background:white;border-radius:50%;top:2px;left:2px;transition:left .2s;}
+.toggle.on::after{left:18px;}
+
+/* CHAT */
+.chat-layout{display:flex;height:calc(100vh - 110px);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.chat-list{width:250px;border-right:1px solid var(--border);overflow-y:auto;background:var(--bg2);flex-shrink:0;}
+.chat-item{padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+.chat-item:hover,.chat-item.active{background:var(--bg3);}
+.chat-item-name{font-size:13px;font-weight:500;color:var(--text);}
+.chat-item-preview{font-size:11px;color:var(--text3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chat-item-time{font-size:10px;color:var(--text3);margin-top:3px;}
+.chat-main{flex:1;display:flex;flex-direction:column;background:var(--bg2);}
+.chat-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.chat-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;}
+.msg{max-width:68%;padding:9px 13px;border-radius:10px;font-size:13px;line-height:1.5;}
+.msg-in{background:var(--bg3);color:var(--text2);align-self:flex-start;border-bottom-left-radius:3px;}
+.msg-out{background:rgba(108,92,231,.18);color:var(--accent2);align-self:flex-end;border-bottom-right-radius:3px;}
+.msg-time{font-size:10px;color:var(--text3);margin-top:3px;}
+.chat-input{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;}
+.chat-input input{flex:1;}
+.loading{text-align:center;padding:30px;color:var(--text3);font-size:13px;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+
+/* TOAST NOTIFICATIONS */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px;min-width:240px;max-width:360px;box-shadow:0 4px 20px rgba(0,0,0,.4);animation:toast-in .2s ease;pointer-events:all;}
+.toast.success{border-left:3px solid var(--green);}
+.toast.error{border-left:3px solid var(--red);}
+@keyframes toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── ORG SELECTOR ─────────────────────────────────── */
+#org-screen{min-height:100vh;background:var(--bg);display:flex;flex-direction:column;}
+.org-header{display:flex;align-items:center;justify-content:space-between;padding:24px 40px;border-bottom:1px solid var(--border);}
+.org-header-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;color:var(--text);}
+.org-header-logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.org-body{flex:1;padding:40px;}
+.org-title{font-size:28px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.org-sub{font-size:14px;color:var(--text2);margin-bottom:28px;}
+.org-search{width:100%;max-width:600px;padding:10px 16px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg2);color:var(--text);font-size:14px;margin-bottom:28px;box-sizing:border-box;}
+.org-search:focus{outline:none;border-color:var(--accent);}
+.org-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+.org-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:border-color .15s,box-shadow .15s;}
+.org-card:hover{border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,92,231,.12);}
+.org-card-top{height:110px;background:var(--bg3);display:flex;align-items:center;justify-content:center;position:relative;}
+.org-card-clone{position:absolute;top:10px;right:10px;font-size:11px;color:var(--text3);display:flex;align-items:center;gap:4px;opacity:0;transition:opacity .15s;}
+.org-card:hover .org-card-clone{opacity:1;}
+.org-avatar{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:white;}
+.org-card-body{padding:14px 16px 0;}
+.org-card-name{font-size:15px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.org-card-plan{font-size:12px;color:var(--text3);margin-bottom:14px;}
+.org-card-btn{display:block;width:100%;padding:10px;background:rgba(108,92,231,.1);color:var(--accent);border:none;border-radius:0 0 var(--radius) var(--radius);font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:background .15s;}
+.org-card:hover .org-card-btn{background:rgba(108,92,231,.2);}
+.org-empty{color:var(--text3);font-size:14px;padding:40px 0;}
+/* ── SMART TAGS ───────────────────────────────────────── */
+.tags-list{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.tag-item{border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;}
+.tag-item-header{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none;}
+.tag-item-header:hover{background:var(--bg3);}
+.tag-pill{padding:4px 14px;border-radius:20px;font-size:13px;font-weight:600;color:white;}
+.tag-item-chevron{margin-left:auto;color:var(--text3);font-size:16px;transition:transform .2s;}
+.tag-item.open .tag-item-chevron{transform:rotate(180deg);}
+.tag-item-body{display:none;padding:0 14px 14px;}
+.tag-item.open .tag-item-body{display:block;}
+.tag-item-body textarea{width:100%;min-height:100px;resize:vertical;font-size:13px;line-height:1.6;box-sizing:border-box;}
+.tag-item-actions{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+.tag-fixed-badge{font-size:10px;color:var(--text3);background:var(--bg3);border-radius:20px;padding:2px 8px;}
+.color-picker-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.color-swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color .15s;}
+.color-swatch.selected{border-color:var(--text);}
+.tag-add-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:1.5px dashed var(--border2);border-radius:var(--radius-sm);color:var(--text2);font-size:13px;cursor:pointer;transition:border-color .15s,color .15s;}
+.tag-add-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+.org-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+
+.super-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;background:rgba(108,92,231,.15);color:var(--accent2);border-radius:20px;padding:3px 10px;font-weight:600;}
+
+</style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<!-- ORG SELECTOR (super admin) -->
+<div id="org-screen" style="display:none">
+  <div class="org-header">
+    <div class="org-header-logo">
+      <div class="org-header-logo-icon"><i class="ti ti-bolt" style="color:white;font-size:14px"></i></div>
+      Prometeo CRM
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="super-badge"><i class="ti ti-shield-check"></i> Super Admin</span>
+      <button onclick="toggleTheme()" title="Cambiar modo" style="background:none;border:1px solid var(--border2);border-radius:var(--radius-sm);padding:5px 9px;color:var(--text2);cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;"><i class="ti ti-moon" id="icon-moon2"></i><i class="ti ti-sun" id="icon-sun2" style="display:none"></i></button>
+      <button onclick="doLogout()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;"><i class="ti ti-logout"></i> Cerrar sesión</button>
+    </div>
+  </div>
+  <div class="org-body">
+    <div class="org-title" id="org-welcome">Bienvenido</div>
+    <div class="org-sub">Seleccioná la organización a la que querés acceder</div>
+    <div class="org-topbar">
+      <input class="org-search" id="org-search" placeholder="Buscar por nombre..." oninput="filterOrgs(this.value)" style="margin-bottom:0;flex:1;max-width:480px;">
+      <button class="btn btn-primary btn-sm" onclick="document.getElementById('modal-nueva-org').style.display='flex'" style="white-space:nowrap;">
+        <i class="ti ti-plus"></i> Nueva organización
+      </button>
+    </div>
+    <div class="org-grid" id="org-grid">
+      <div class="org-empty">Cargando organizaciones...</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVA ORG -->
+<div class="modal-overlay" id="modal-nueva-org" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <div class="modal-title">Nueva organización</div>
+      <button class="modal-close" onclick="document.getElementById('modal-nueva-org').style.display='none'">×</button>
+    </div>
+    <div id="nueva-org-error" class="msg-box msg-error" style="margin-bottom:12px;"></div>
+    <div class="form-grid">
+      <div class="form-gi form-full">
+        <label class="form-label">Nombre de la empresa</label>
+        <input id="no-empresa" placeholder="Inmobiliaria XYZ">
+      </div>
+      <div class="form-gi form-full">
+        <label class="form-label">Email del administrador</label>
+        <input id="no-email" type="email" placeholder="admin@empresa.com">
+      </div>
+      <div class="form-gi">
+        <label class="form-label">Contraseña</label>
+        <input id="no-pass" type="password" placeholder="Mínimo 6 caracteres">
+      </div>
+      <div class="form-gi">
+        <label class="form-label">Repetir contraseña</label>
+        <input id="no-pass2" type="password" placeholder="Repetir">
+      </div>
+      <div class="form-gi form-full">
+        <label class="form-label">Plan</label>
+        <select id="no-plan">
+          <option value="premium">Premium</option>
+          <option value="basic">Basic</option>
+          <option value="enterprise">Enterprise</option>
+          <option value="free">Free</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="document.getElementById('modal-nueva-org').style.display='none'">Cancelar</button>
+      <button class="btn btn-primary" id="btn-crear-org" onclick="crearOrg()">
+        <i class="ti ti-plus"></i> Crear organización
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon"><i class="ti ti-bolt" style="color:white;font-size:22px"></i></div>
+      <div class="auth-title">Prometeo CRM</div>
+      <div class="auth-sub">Plataforma de bots inmobiliarios</div>
+    </div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="switchTab('login')">Ingresar</div>
+      <div class="auth-tab" id="tab-register" onclick="switchTab('register')">Crear cuenta</div>
+    </div>
+
+    <div id="auth-error" class="msg-box msg-error"></div>
+    <div id="auth-success" class="msg-box msg-success"></div>
+
+    <!-- LOGIN -->
+    <div id="form-login">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" id="login-email" placeholder="tu@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contraseña</label>
+        <input type="password" id="login-pass" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doLogin()" id="login-btn">
+        <i class="ti ti-login"></i> Ingresar
+      </button>
+    </div>
+
+    <!-- REGISTRO -->
+    <div id="form-register" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Nombre de tu empresa</label>
+        <input type="text" id="reg-empresa" placeholder="Inmobiliaria XYZ">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" id="reg-email" placeholder="tu@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contraseña</label>
+        <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Repetir contraseña</label>
+        <input type="password" id="reg-pass2" placeholder="Repetí la contraseña">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doRegister()" id="register-btn">
+        <i class="ti ti-user-plus"></i> Crear cuenta
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen" style="display:none;flex-direction:column;height:100vh">
+  <div class="topnav">
+    <div class="topnav-logo">
+      <div class="topnav-logo-icon"><i class="ti ti-bolt" style="color:white;font-size:14px"></i></div>
+      Prometeo
+    </div>
+    <div class="topnav-sep"></div>
+    <div class="empresa-name" id="empresa-display">—</div>
+    <button id="btn-volver-orgs" onclick="volverOrgs()" style="display:none;background:none;border:1px solid var(--border2);border-radius:var(--radius-sm);padding:4px 10px;color:var(--text2);cursor:pointer;font-size:12px;display:none;align-items:center;gap:5px;"><i class="ti ti-arrow-left"></i> Organizaciones</button>
+    <div class="topnav-right">
+      <span class="user-badge" id="user-email-display"></span>
+      <button id="theme-toggle" onclick="toggleTheme()" title="Cambiar modo" style="background:none;border:1px solid var(--border2);border-radius:var(--radius-sm);padding:5px 9px;color:var(--text2);cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;"><i class="ti ti-moon" id="icon-moon"></i><i class="ti ti-sun" id="icon-sun" style="display:none"></i></button>
+      <button class="logout-btn" onclick="doLogout()"><i class="ti ti-logout" style="font-size:13px"></i> Salir</button>
+    </div>
+  </div>
+
+  <div class="app-body">
+    <div class="sidebar">
+      <div class="nav">
+        <div class="nav-section">General</div>
+        <div class="nav-item active" onclick="showSection('dashboard',this)"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+        <div class="nav-item" onclick="showSection('leads',this)"><i class="ti ti-users"></i> Leads <span class="nav-badge" id="badge-leads">0</span></div>
+        <div class="nav-item" onclick="showSection('conversaciones',this)"><i class="ti ti-message-2"></i> Conversaciones</div>
+        <div class="nav-item" onclick="showSection('citas',this)"><i class="ti ti-calendar"></i> Citas</div>
+        <div class="nav-section">Configuración</div>
+        <div class="nav-item" onclick="showSection('empresa',this)"><i class="ti ti-settings"></i> Mi empresa</div>
+        <div class="nav-item" onclick="showSection('bot',this)"><i class="ti ti-robot"></i> Bot</div>
+        <div class="nav-item" onclick="showSection('canales',this)"><i class="ti ti-plug-connected"></i> Canales</div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="page-header">
+        <div class="page-title" id="page-title">Dashboard</div>
+        <div id="page-actions"></div>
+      </div>
+      <div class="content">
+
+        <!-- DASHBOARD -->
+        <div class="section active" id="sec-dashboard">
+          <div class="metrics">
+            <div class="metric"><div class="metric-label">Leads totales</div><div class="metric-value" id="m-total" style="color:var(--accent2)">—</div><div class="metric-sub">en tu cuenta</div></div>
+          </div>
+          <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
+            <div class="metric"><div class="metric-label">Nuevos (7 días)</div><div class="metric-value" id="m-nuevos7d" style="color:var(--green)">—</div><div class="metric-sub">esta semana</div></div>
+            <div class="metric"><div class="metric-label">Nuevos (30 días)</div><div class="metric-value" id="m-nuevos30d" style="color:var(--green)">—</div><div class="metric-sub">este mes</div></div>
+            <div class="metric"><div class="metric-label">Con humano</div><div class="metric-value" id="m-humano" style="color:var(--amber)">—</div><div class="metric-sub">bot pausado</div></div>
+          </div>
+          <div class="card"><div class="card-title">Últimos leads</div><div id="dashboard-leads-list"><div class="loading">Cargando...</div></div></div>
+        </div>
+
+        <!-- LEADS -->
+        <div class="section" id="sec-leads"><div id="leads-content"><div class="loading">Cargando...</div></div></div>
+
+        <!-- CONVERSACIONES -->
+        <div class="section" id="sec-conversaciones">
+          <div class="chat-layout">
+            <div class="chat-list" id="chat-list"><div class="loading">Cargando...</div></div>
+            <div class="chat-main">
+              <div class="chat-header" id="chat-header"><div style="color:var(--text3);font-size:13px">Seleccioná un lead</div></div>
+              <div class="chat-messages" id="chat-messages"></div>
+              <div class="chat-input" id="chat-input" style="display:none">
+                <input placeholder="Responder manualmente..." id="manual-msg" onkeydown="if(event.key==='Enter')enviarManual()">
+                <button class="btn btn-primary btn-sm" onclick="enviarManual()"><i class="ti ti-send"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CITAS -->
+        <div class="section" id="sec-citas"><div id="citas-content"><div class="loading">Cargando...</div></div></div>
+
+        <!-- EMPRESA -->
+        <div class="section" id="sec-empresa">
+          <div class="card">
+            <div class="card-title">Datos de la empresa</div>
+            <div class="form-grid">
+              <div class="form-gi form-full"><label class="form-label">Nombre de la empresa</label><input id="emp-nombre" placeholder="Inmobiliaria XYZ"></div>
+              <div class="form-gi"><label class="form-label">Email de contacto</label><input id="emp-email" placeholder="contacto@empresa.com"></div>
+              <div class="form-gi"><label class="form-label">Teléfono</label><input id="emp-telefono" placeholder="+54 11 xxxx-xxxx"></div>
+              <div class="form-gi"><label class="form-label">Ciudad</label><input id="emp-ciudad" placeholder="Buenos Aires"></div>
+              <div class="form-gi"><label class="form-label">País</label><input id="emp-pais" placeholder="Argentina"></div>
+              <div class="form-gi form-full"><label class="form-label">Sitio web</label><input id="emp-web" placeholder="https://www.empresa.com"></div>
+            </div>
+            <div class="form-actions"><button class="btn btn-primary" onclick="saveEmpresa()"><i class="ti ti-device-floppy"></i> Guardar</button></div>
+          </div>
+        </div>
+
+        <!-- CANALES -->
+        <div class="section" id="sec-canales">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:16px;">
+
+            <!-- WhatsApp -->
+            <div class="card" style="margin-bottom:0">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+                <div style="width:36px;height:36px;background:rgba(0,184,148,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                  <i class="ti ti-brand-whatsapp" style="font-size:18px;color:var(--green)"></i>
+                </div>
+                <div>
+                  <div style="font-size:13px;font-weight:600;">WhatsApp</div>
+                  <div id="wsp-status-text" style="font-size:11px;color:var(--text3);">No conectado</div>
+                </div>
+                <div id="wsp-status-badge" class="badge badge-red" style="margin-left:auto;">Desconectado</div>
+              </div>
+              <div id="wsp-disconnected">
+                <p style="font-size:12px;color:var(--text3);margin-bottom:14px;">Conectá tu línea de WhatsApp para que Zoe responda automáticamente a tus clientes.</p>
+                <button class="btn btn-primary btn-full" onclick="conectarWhatsApp()">
+                  <i class="ti ti-qrcode"></i> Conectar WhatsApp
+                </button>
+              </div>
+              <div id="wsp-connected" style="display:none;">
+                <div style="background:rgba(0,184,148,.08);border:1px solid rgba(0,184,148,.2);border-radius:8px;padding:12px;margin-bottom:12px;">
+                  <div style="font-size:12px;color:var(--text3);margin-bottom:2px;">Número conectado</div>
+                  <div id="wsp-phone" style="font-size:15px;font-weight:600;color:var(--green);">—</div>
+                </div>
+                <button class="btn btn-full" onclick="desconectarWhatsApp()" style="border-color:var(--red);color:var(--red);">
+                  <i class="ti ti-plug-x"></i> Desconectar
+                </button>
+              </div>
+            </div>
+
+
+            <!-- Instagram -->
+            <div class="card" style="margin-bottom:0;opacity:.6;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+                <div style="width:36px;height:36px;background:rgba(225,112,85,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                  <i class="ti ti-brand-instagram" style="font-size:18px;color:var(--red)"></i>
+                </div>
+                <div>
+                  <div style="font-size:13px;font-weight:600;">Instagram</div>
+                  <div style="font-size:11px;color:var(--text3);">Próximamente</div>
+                </div>
+                <div class="badge" style="margin-left:auto;background:rgba(90,90,114,.15);color:var(--text3);">En desarrollo</div>
+              </div>
+              <p style="font-size:12px;color:var(--text3);">Respondé mensajes directos de Instagram.</p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- BOT -->
+        <div class="section" id="sec-bot">
+
+          <!-- Configuración general -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">Configuración del bot</div>
+            <div class="form-grid">
+              <div class="form-gi form-full"><label class="form-label">Mensaje de bienvenida</label><textarea id="bot-saludo" placeholder="¡Hola! Soy el asistente de [EMPRESA]..."></textarea></div>
+              <div class="form-gi form-full"><label class="form-label">Prompt del sistema</label><textarea id="bot-prompt" style="min-height:140px" placeholder="Sos el asistente de ventas de [EMPRESA]..."></textarea></div>
+              <div class="form-gi form-full" style="display:flex;align-items:center;gap:12px">
+                <div class="toggle on" id="bot-toggle" onclick="this.classList.toggle('on')"></div>
+                <div><div style="font-size:13px;font-weight:500">Bot activo</div><div style="font-size:11px;color:var(--text3)">El bot responde automáticamente</div></div>
+              </div>
+            </div>
+            <div class="form-actions"><button class="btn btn-primary" onclick="saveBot()"><i class="ti ti-device-floppy"></i> Guardar configuración</button></div>
+          </div>
+
+          <!-- Smart Tags -->
+          <div class="card">
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:6px;">
+              <i class="ti ti-tag" style="font-size:20px;color:var(--accent);margin-top:2px"></i>
+              <div>
+                <div class="card-title" style="margin-bottom:2px">Smart Tags</div>
+                <div style="font-size:12px;color:var(--text3);line-height:1.5">Los tags le indican al bot cuándo clasificar un lead en cada categoría. La descripción se inyecta en el prompt automáticamente.</div>
+              </div>
+            </div>
+            <div class="tags-list" id="tags-list"></div>
+            <div class="tag-add-btn" onclick="abrirModalNuevoTag()">
+              <i class="ti ti-plus"></i> Crear nueva smart tag
+            </div>
+          </div>
+
+        </div>
+
+        <!-- MODAL NUEVO/EDITAR TAG -->
+        <div class="modal-overlay" id="modal-tag" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+          <div class="modal" style="max-width:440px">
+            <div class="modal-header">
+              <div class="modal-title" id="modal-tag-title">Nueva smart tag</div>
+              <button class="modal-close" onclick="cerrarModalTag()">×</button>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nombre de la etiqueta</label>
+              <input id="tag-nombre" placeholder="Ej: En negociación">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Color</label>
+              <div class="color-picker-row" id="color-picker-row"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">¿Cuándo debe aplicar esta etiqueta?</label>
+              <textarea id="tag-descripcion" style="min-height:110px" placeholder="Describí la situación o contexto en que el bot debe asignar esta etiqueta al lead..."></textarea>
+            </div>
+            <div class="form-actions">
+              <button class="btn" onclick="cerrarModalTag()">Cancelar</button>
+              <button class="btn btn-primary" onclick="guardarTag()"><i class="ti ti-device-floppy"></i> Guardar</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL QR WHATSAPP -->
+<div class="modal-overlay" id="modal-wsp" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">Conectar WhatsApp</div>
+      <button class="modal-close" onclick="document.getElementById('modal-wsp').style.display='none'">×</button>
+    </div>
+    <div style="display:flex;gap:24px;align-items:flex-start;padding:8px 0;">
+      <div style="flex:1;">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">Escaneá el código QR con tu WhatsApp para conectar tu línea al bot.</p>
+        <ol style="font-size:12px;color:var(--text3);line-height:2;padding-left:16px;">
+          <li>Abrí WhatsApp en tu teléfono</li>
+          <li>Tocá <strong style="color:var(--text2)">Menú</strong> o <strong style="color:var(--text2)">Configuración</strong></li>
+          <li>Seleccioná <strong style="color:var(--text2)">Dispositivos vinculados</strong></li>
+          <li>Tocá <strong style="color:var(--text2)">Vincular un dispositivo</strong></li>
+          <li>Apuntá la cámara al QR</li>
+        </ol>
+        <div id="qr-loading" style="margin-top:16px;font-size:12px;color:var(--text3);">
+          <i class="ti ti-loader" style="animation:spin 1s linear infinite;display:inline-block;"></i> Generando QR...
+        </div>
+        <div id="qr-success" style="display:none;margin-top:16px;background:rgba(0,184,148,.08);border:1px solid rgba(0,184,148,.2);border-radius:8px;padding:12px;">
+          <div style="font-size:12px;color:var(--green);font-weight:600;"><i class="ti ti-check"></i> ¡WhatsApp conectado!</div>
+          <div id="qr-phone" style="font-size:13px;color:var(--text2);margin-top:4px;"></div>
+        </div>
+        <div id="qr-error" style="display:none;margin-top:16px;background:rgba(225,112,85,.08);border:1px solid rgba(225,112,85,.2);border-radius:8px;padding:12px;font-size:12px;color:var(--red);">
+          Error al generar QR. Intentá de nuevo.
+        </div>
+      </div>
+      <div style="flex-shrink:0;">
+        <div id="qr-container" style="width:180px;height:180px;background:var(--bg3);border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+          <i class="ti ti-qrcode" style="font-size:48px;color:var(--text3);"></i>
+        </div>
+        <button class="btn btn-sm" style="width:180px;margin-top:8px;" onclick="refreshQR()">
+          <i class="ti ti-refresh"></i> Actualizar QR
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+
+<script>
+
+// ── TOAST ─────────────────────────────────────────────
+function showToast(msg, type) {
+  type = type || 'success';
+  const tc = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = '<i class="ti ' + (type==='success' ? 'ti-circle-check' : 'ti-circle-x') + '" style="font-size:16px;flex-shrink:0"></i>' + msg;
+  tc.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 3000);
+}
+
+// IMPORTANTE: mover estas keys a variables de entorno antes de produccion
+const SUPABASE_URL = 'https://iclwvbckgkgpyxxyzfjw.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_KOGorlokri-LFb9kpoLqcA_E8mEmnu1';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let currentEmpresa = null;
+let activeChatLeadId = null;
+let activeChatNombre = null;
+
+// ── AUTH ─────────────────────────────────────────────
+function switchTab(tab) {
+  document.getElementById('form-login').style.display    = tab==='login'    ? 'block' : 'none';
+  document.getElementById('form-register').style.display = tab==='register' ? 'block' : 'none';
+  document.getElementById('tab-login').classList.toggle('active',    tab==='login');
+  document.getElementById('tab-register').classList.toggle('active', tab==='register');
+  hideMessages();
+}
+
+function showMsg(type, msg) {
+  hideMessages();
+  const el = document.getElementById('auth-'+type);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function hideMessages() {
+  document.getElementById('auth-error').style.display = 'none';
+  document.getElementById('auth-success').style.display = 'none';
+}
+
+// ── ROLES ────────────────────────────────────────────
+const SUPER_ADMIN_EMAILS = []; // se completa desde la tabla perfiles con role='super_admin'
+
+async function isSuperAdmin(userId) {
+  const { data } = await sb.from('perfiles').select('role').eq('id', userId).single();
+  return data?.role === 'super_admin';
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  if (!email || !pass) { showMsg('error','Completá todos los campos'); return; }
+
+  const btn = document.getElementById('login-btn');
+  btn.innerHTML = '<i class="ti ti-loader"></i> Ingresando...';
+  btn.disabled = true;
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    showMsg('error', 'Email o contraseña incorrectos');
+    btn.innerHTML = '<i class="ti ti-login"></i> Ingresar';
+    btn.disabled = false;
+    return;
+  }
+  currentUser = data.user;
+  document.getElementById('user-email-display').textContent = email;
+  const superAdmin = await isSuperAdmin(currentUser.id);
+  if (superAdmin) {
+    showOrgSelector();
+  } else {
+    await loadEmpresa();
+    showApp();
+  }
+}
+
+async function doRegister() {
+  const empresa = document.getElementById('reg-empresa').value.trim();
+  const email   = document.getElementById('reg-email').value.trim();
+  const pass    = document.getElementById('reg-pass').value;
+  const pass2   = document.getElementById('reg-pass2').value;
+
+  if (!empresa || !email || !pass || !pass2) { showMsg('error','Completá todos los campos'); return; }
+  if (pass !== pass2) { showMsg('error','Las contraseñas no coinciden'); return; }
+  if (pass.length < 6) { showMsg('error','La contraseña debe tener al menos 6 caracteres'); return; }
+
+  const btn = document.getElementById('register-btn');
+  btn.innerHTML = '<i class="ti ti-loader"></i> Creando cuenta...';
+  btn.disabled = true;
+
+  const { data, error } = await sb.auth.signUp({ email, password: pass });
+  if (error) {
+    showMsg('error', error.message);
+    btn.innerHTML = '<i class="ti ti-user-plus"></i> Crear cuenta';
+    btn.disabled = false;
+    return;
+  }
+
+  currentUser = data.user;
+
+  const { error: e2 } = await sb.rpc('crear_cuenta_empresa', {
+    p_user_id: currentUser.id,
+    p_email:   email,
+    p_empresa: empresa
+  });
+
+  if (e2) {
+    showMsg('error', 'Error al crear la cuenta: ' + e2.message);
+    btn.innerHTML = '<i class="ti ti-user-plus"></i> Crear cuenta';
+    btn.disabled = false;
+    return;
+  }
+
+  document.getElementById('user-email-display').textContent = email;
+  await loadEmpresa();
+  showApp();
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  document.getElementById('app-screen').style.display  = 'none';
+  document.getElementById('org-screen').style.display  = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  currentUser = null; currentEmpresa = null;
+}
+
+async function checkSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    document.getElementById('user-email-display').textContent = session.user.email;
+    const superAdmin = await isSuperAdmin(currentUser.id);
+    if (superAdmin) {
+      showOrgSelector();
+    } else {
+      await loadEmpresa();
+      showApp();
+    }
+  }
+}
+
+async function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('org-screen').style.display  = 'none';
+  const app = document.getElementById('app-screen');
+  app.style.display = 'flex';
+  // mostrar botón volver si es super admin
+  const sa = await isSuperAdmin(currentUser.id);
+  const btnVolver = document.getElementById('btn-volver-orgs');
+  if (btnVolver) btnVolver.style.display = sa ? 'flex' : 'none';
+  loadDashboard();
+  checkWspStatus();
+}
+
+// ── EMPRESA ──────────────────────────────────────────
+async function loadEmpresa() {
+  const { data: perfil } = await sb.from('perfiles').select('cuenta_id').eq('id', currentUser.id).single();
+  if (!perfil) return;
+  const { data: emp } = await sb.from('empresas').select('*').eq('cuenta_id', perfil.cuenta_id).single();
+  if (!emp) return;
+  currentEmpresa = emp;
+  document.getElementById('empresa-display').textContent = emp.nombre;
+  document.getElementById('emp-nombre').value   = emp.nombre||'';
+  document.getElementById('emp-email').value    = emp.email_contacto||'';
+  document.getElementById('emp-telefono').value = emp.telefono||'';
+  document.getElementById('emp-ciudad').value   = emp.ciudad||'';
+  document.getElementById('emp-pais').value     = emp.pais||'';
+  document.getElementById('emp-web').value      = emp.sitio_web||'';
+  document.getElementById('bot-prompt').value   = emp.prompt_sistema||'';
+  document.getElementById('bot-saludo').value   = emp.prompt_saludo||'';
+  if (!emp.bot_activo) document.getElementById('bot-toggle').classList.remove('on');
+}
+
+async function saveEmpresa() {
+  if (!currentEmpresa) return;
+  await sb.from('empresas').update({
+    nombre: document.getElementById('emp-nombre').value,
+    email_contacto: document.getElementById('emp-email').value,
+    telefono: document.getElementById('emp-telefono').value,
+    ciudad: document.getElementById('emp-ciudad').value,
+    pais: document.getElementById('emp-pais').value,
+    sitio_web: document.getElementById('emp-web').value,
+    updated_at: new Date().toISOString()
+  }).eq('id', currentEmpresa.id);
+  document.getElementById('empresa-display').textContent = document.getElementById('emp-nombre').value;
+  showToast('Empresa guardada');
+}
+
+async function saveBot() {
+  if (!currentEmpresa) return;
+  await sb.from('empresas').update({
+    prompt_sistema: document.getElementById('bot-prompt').value,
+    prompt_saludo: document.getElementById('bot-saludo').value,
+    bot_activo: document.getElementById('bot-toggle').classList.contains('on'),
+    updated_at: new Date().toISOString()
+  }).eq('id', currentEmpresa.id);
+  showToast('Bot guardado');
+}
+
+// ── DASHBOARD ────────────────────────────────────────
+async function loadDashboard() {
+  if (!currentEmpresa) return;
+
+  // Métricas desde la vista metricas_dashboard
+  const { data: met } = await sb.from('metricas_dashboard').select('*').eq('empresa_id', currentEmpresa.id).single();
+  if (met) {
+    document.getElementById('m-total').textContent     = met.leads_total || 0;
+    document.getElementById('badge-leads').textContent = met.leads_total || 0;
+    // Métricas extendidas
+    if (document.getElementById('m-nuevos7d'))  document.getElementById('m-nuevos7d').textContent  = met.nuevos_7d  || 0;
+    if (document.getElementById('m-nuevos30d')) document.getElementById('m-nuevos30d').textContent = met.nuevos_30d || 0;
+    if (document.getElementById('m-humano'))    document.getElementById('m-humano').textContent    = met.leads_con_humano || 0;
+  }
+
+  // Últimos leads (5)
+  const { data: rec } = await sb.from('leads').select('*').eq('empresa_id', currentEmpresa.id).order('created_at',{ascending:false}).limit(5);
+  const list = document.getElementById('dashboard-leads-list');
+  if (!rec||rec.length===0) { list.innerHTML='<div class="empty-state"><i class="ti ti-users"></i><p>Aún no hay leads.</p></div>'; return; }
+  list.innerHTML = rec.map(l=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div class="avatar">${(l.nombre||l.contacto||'?').substring(0,2).toUpperCase()}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:500;color:var(--text)">${l.nombre||l.contacto}</div>
+        <div style="font-size:11px;color:var(--text3)">${l.canal} · ${new Date(l.created_at).toLocaleDateString('es-AR')} · ${l.intencion||'sin intención'}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── LEADS ────────────────────────────────────────────
+async function loadLeads() {
+  if (!currentEmpresa) return;
+  const { data } = await sb.from('leads').select('*').eq('empresa_id', currentEmpresa.id).order('created_at',{ascending:false});
+  const el = document.getElementById('leads-content');
+  if (!data||data.length===0) { el.innerHTML='<div class="empty-state"><i class="ti ti-users"></i><p>No hay leads todavía.</p></div>'; return; }
+  el.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Contacto</th><th>Canal</th><th>Intención</th><th>Presupuesto</th><th>Fecha</th></tr></thead><tbody>${
+    data.map(l=>`<tr>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="avatar">${(l.nombre||l.contacto||'?').substring(0,2).toUpperCase()}</div><div><div class="td-primary">${l.nombre||'—'}</div><div style="font-size:11px;color:var(--text3)">${l.contacto}</div></div></div></td>
+      <td><span class="badge badge-blue">${l.canal}</span></td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.intencion||'—'}</td>
+      <td>${l.presupuesto_max?'USD '+Number(l.presupuesto_max).toLocaleString():'—'}</td>
+      <td>${new Date(l.created_at).toLocaleDateString('es-AR')}</td>
+    </tr>`).join('')
+  }</tbody></table></div>`;
+}
+
+// ── CONVERSACIONES ───────────────────────────────────
+async function loadConversaciones() {
+  if (!currentEmpresa) return;
+  const { data: leads } = await sb.from('leads').select('*').eq('empresa_id', currentEmpresa.id).order('updated_at',{ascending:false});
+  const list = document.getElementById('chat-list');
+  if (!leads||leads.length===0) { list.innerHTML='<div class="loading">Sin conversaciones</div>'; return; }
+  list.innerHTML = leads.map(l=>`
+    <div class="chat-item" onclick="loadMensajes('${l.id}','${(l.nombre||l.contacto).replace(/'/g,"\\'")}',this)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="avatar" style="width:26px;height:26px;font-size:9px">${(l.nombre||l.contacto||'?').substring(0,2).toUpperCase()}</div>
+        <div class="chat-item-name" style="flex:1">${l.nombre||l.contacto}</div>
+      </div>
+      <div class="chat-item-preview">${l.intencion||'Sin intención detectada'}</div>
+      <div class="chat-item-time">${l.canal} · ${new Date(l.updated_at||l.created_at).toLocaleDateString('es-AR')}</div>
+    </div>`).join('');
+}
+
+async function loadMensajes(leadId, nombre, el) {
+  activeChatLeadId = leadId;
+  activeChatNombre = nombre;
+  document.querySelectorAll('.chat-item').forEach(i=>i.classList.remove('active'));
+  el?.classList.add('active');
+  document.getElementById('chat-header').innerHTML=`
+    <div class="avatar">${nombre.substring(0,2).toUpperCase()}</div>
+    <div><div style="font-size:13px;font-weight:500">${nombre}</div></div>
+    <button class="btn btn-sm" style="margin-left:auto" onclick="toggleBot('${leadId}')"><i class="ti ti-user-check"></i> Tomar control</button>`;
+  document.getElementById('chat-input').style.display='flex';
+  const { data: msgs } = await sb.from('mensajes').select('*').eq('lead_id', leadId).order('created_at',{ascending:true});
+  const msgsEl = document.getElementById('chat-messages');
+  if (!msgs||msgs.length===0) { msgsEl.innerHTML='<div class="loading">Sin mensajes aún</div>'; return; }
+  msgsEl.innerHTML = msgs.map(m=>`
+    <div class="msg ${m.direccion==='entrante'?'msg-in':'msg-out'}">
+      ${m.contenido}
+      <div class="msg-time">${new Date(m.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}${m.direccion==='saliente'?' · Bot':''}</div>
+    </div>`).join('');
+  msgsEl.scrollTop=msgsEl.scrollHeight;
+}
+
+async function toggleBot(leadId) {
+  const { data: lead } = await sb.from('leads').select('bot_pausado').eq('id',leadId).single();
+  if (!lead) return;
+  await sb.from('leads').update({bot_pausado:!lead.bot_pausado}).eq('id',leadId);
+  showToast(lead.bot_pausado ? 'Bot reactivado — el bot responde automaticamente' : 'Bot pausado — podés responder manualmente');
+}
+
+
+
+// ── CITAS ────────────────────────────────────────────
+async function loadCitas() {
+  if (!currentEmpresa) return;
+  const { data } = await sb.from('citas').select('*, leads!inner(nombre,contacto,empresa_id)').eq('empresa_id', currentEmpresa.id).order('fecha_inicio',{ascending:true});
+  const el = document.getElementById('citas-content');
+  if (!data||data.length===0) { el.innerHTML='<div class="empty-state"><i class="ti ti-calendar"></i><p>No hay citas agendadas.</p></div>'; return; }
+  el.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Lead</th><th>Fecha</th><th>Título</th><th>Estado</th><th>Link</th></tr></thead><tbody>${
+    data.map(c=>`<tr><td class="td-primary">${c.leads?.nombre||c.leads?.contacto||'—'}</td><td>${new Date(c.fecha_inicio).toLocaleString('es-AR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</td><td>${c.titulo||'—'}</td><td><span class="badge ${c.estado==='programada'?'badge-green':'badge-red'}">${c.estado}</span></td><td>${c.meet_link?`<a href="${c.meet_link}" target="_blank" style="color:var(--accent2)">Abrir</a>`:'—'}</td></tr>`).join('')
+  }</tbody></table></div>`;
+}
+
+// ── NAVEGACIÓN ───────────────────────────────────────
+const pageTitles={dashboard:'Dashboard',leads:'Leads',conversaciones:'Conversaciones',citas:'Citas',empresa:'Mi empresa',bot:'Bot',canales:'Canales'};
+// ── WHATSAPP QR ───────────────────────────────────────
+const BAILEYS_URL = 'https://baileys-qr-production.up.railway.app';
+let qrPollInterval = null;
+
+async function checkWspStatus() {
+  try {
+    const res = await fetch(`${BAILEYS_URL}/status`);
+    const data = await res.json();
+    if (data.connected) {
+      document.getElementById('wsp-status-text').textContent = 'Conectado';
+      document.getElementById('wsp-status-badge').className = 'badge badge-green';
+      document.getElementById('wsp-status-badge').textContent = 'Conectado';
+      document.getElementById('wsp-disconnected').style.display = 'none';
+      document.getElementById('wsp-connected').style.display = 'block';
+      document.getElementById('wsp-phone').textContent = '+' + (data.phone || '');
+    } else {
+      document.getElementById('wsp-status-text').textContent = 'No conectado';
+      document.getElementById('wsp-status-badge').className = 'badge badge-red';
+      document.getElementById('wsp-status-badge').textContent = 'Desconectado';
+      document.getElementById('wsp-disconnected').style.display = 'block';
+      document.getElementById('wsp-connected').style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+async function conectarWhatsApp() {
+  document.getElementById('modal-wsp').style.display = 'flex';
+  document.getElementById('qr-loading').style.display = 'block';
+  document.getElementById('qr-success').style.display = 'none';
+  document.getElementById('qr-error').style.display = 'none';
+  await refreshQR();
+  // Polling cada 3 seg para detectar cuando se conecta
+  qrPollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`${BAILEYS_URL}/qr`);
+      const data = await res.json();
+      if (data.status === 'connected') {
+        clearInterval(qrPollInterval);
+        document.getElementById('qr-loading').style.display = 'none';
+        document.getElementById('qr-success').style.display = 'block';
+        document.getElementById('qr-phone').textContent = 'Número: +' + (data.phone || '');
+        document.getElementById('qr-container').innerHTML = '<i class="ti ti-check" style="font-size:48px;color:var(--green);"></i>';
+        checkWspStatus();
+      }
+    } catch(e) {}
+  }, 3000);
+}
+
+async function refreshQR() {
+  try {
+    document.getElementById('qr-error').style.display = 'none';
+    const res = await fetch(`${BAILEYS_URL}/qr`);
+    const data = await res.json();
+    document.getElementById('qr-loading').style.display = 'none';
+    if (data.status === 'qr') {
+      document.getElementById('qr-container').innerHTML = `<img src="${data.qr}" style="width:180px;height:180px;border-radius:8px;">`;
+    } else if (data.status === 'connected') {
+      document.getElementById('qr-success').style.display = 'block';
+      document.getElementById('qr-phone').textContent = 'Número: +' + (data.phone || '');
+      document.getElementById('qr-container').innerHTML = '<i class="ti ti-check" style="font-size:48px;color:var(--green);"></i>';
+      checkWspStatus();
+    } else {
+      document.getElementById('qr-loading').style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById('qr-loading').style.display = 'none';
+    document.getElementById('qr-error').style.display = 'block';
+  }
+}
+
+async function desconectarWhatsApp() {
+  if (!confirm('¿Desconectar WhatsApp? El bot dejará de responder.')) return;
+  try {
+    await fetch(`${BAILEYS_URL}/disconnect`, { method: 'POST' });
+    showToast('WhatsApp desconectado', 'success');
+    checkWspStatus();
+  } catch(e) {
+    showToast('Error al desconectar', 'error');
+  }
+}
+
+function showSection(id, el) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+id)?.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el?.classList.add('active');
+  document.getElementById('page-title').textContent = pageTitles[id]||id;
+  document.getElementById('page-actions').innerHTML = '';
+  if(id==='leads') loadLeads();
+  if(id==='conversaciones') loadConversaciones();
+  if(id==='citas') loadCitas();
+  if(id==='bot') loadTagsConfig().then(loadTags);
+}
+
+// ── ENVÍO MANUAL ─────────────────────────────────────
+async function enviarManual() {
+  if (!activeChatLeadId) return;
+  const input = document.getElementById('manual-msg');
+  const texto = input.value.trim();
+  if (!texto) return;
+  input.value = '';
+
+  // Guardar en BD
+  const { error } = await sb.from('mensajes').insert({
+    lead_id:   activeChatLeadId,
+    canal:     'whatsapp',
+    direccion: 'saliente',
+    contenido: texto
+  });
+
+  if (error) { showToast('Error al enviar: ' + error.message, 'error'); return; }
+
+  // Actualizar chat visualmente
+  const msgsEl = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg msg-out';
+  div.innerHTML = texto + '<div class="msg-time">' + new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) + ' · Manual</div>';
+  msgsEl.appendChild(div);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  // Registrar como actividad
+  await sb.from('actividades').insert({
+    lead_id:    activeChatLeadId,
+    tipo:       'mensaje_manual',
+    descripcion: 'Mensaje manual enviado: ' + texto.substring(0, 100)
+  });
+}
+
+
+
+// ── ORG SELECTOR ─────────────────────────────────────
+let allOrgs = [];
+
+function avatarColor(name) {
+  const colors = ['#6c5ce7','#00b894','#e17055','#0984e3','#fd79a8','#fdcb6e','#00cec9','#a29bfe'];
+  let hash = 0;
+  for (let c of name) hash = c.charCodeAt(0) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function avatarInitials(name) {
+  return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+}
+
+async function showOrgSelector() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display  = 'none';
+  document.getElementById('org-screen').style.display  = 'flex';
+  document.getElementById('org-welcome').textContent   = 'Bienvenido ' + (currentUser.email.split('@')[0]);
+  await loadOrgs();
+}
+
+async function loadOrgs() {
+  const { data, error } = await sb.from('empresas').select('id,nombre,logo_url,plan').order('nombre');
+  if (error || !data) return;
+  allOrgs = data;
+  renderOrgs(allOrgs);
+}
+
+function renderOrgs(orgs) {
+  const grid = document.getElementById('org-grid');
+  if (!orgs.length) {
+    grid.innerHTML = '<div class="org-empty">No se encontraron organizaciones.</div>';
+    return;
+  }
+  grid.innerHTML = orgs.map(org => {
+    const color = avatarColor(org.nombre);
+    const initials = avatarInitials(org.nombre);
+    const avatar = org.logo_url
+      ? `<img src="${org.logo_url}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;">`
+      : `<div class="org-avatar" style="background:${color}">${initials}</div>`;
+    return `
+    <div class="org-card" onclick="selectOrg('${org.id}')">
+      <div class="org-card-top">
+        ${avatar}
+        <span class="org-card-clone"><i class="ti ti-copy"></i> Clonar</span>
+      </div>
+      <div class="org-card-body">
+        <div class="org-card-name">${org.nombre}</div>
+        <div class="org-card-plan">Plan ${org.plan || 'premium'}</div>
+      </div>
+      <button class="org-card-btn">Seleccionar</button>
+    </div>`;
+  }).join('');
+}
+
+function filterOrgs(q) {
+  const filtered = allOrgs.filter(o => o.nombre.toLowerCase().includes(q.toLowerCase()));
+  renderOrgs(filtered);
+}
+
+async function selectOrg(empresaId) {
+  const { data: emp } = await sb.from('empresas').select('*').eq('id', empresaId).single();
+  if (!emp) return;
+  currentEmpresa = emp;
+  document.getElementById('org-screen').style.display = 'none';
+  document.getElementById('empresa-display').textContent = emp.nombre;
+  // poblar campos empresa y bot
+  document.getElementById('emp-nombre').value   = emp.nombre||'';
+  document.getElementById('emp-email').value    = emp.email_contacto||'';
+  document.getElementById('emp-telefono').value = emp.telefono||'';
+  document.getElementById('emp-ciudad').value   = emp.ciudad||'';
+  document.getElementById('emp-pais').value     = emp.pais||'';
+  document.getElementById('emp-web').value      = emp.sitio_web||'';
+  document.getElementById('bot-prompt').value   = emp.prompt_sistema||'';
+  document.getElementById('bot-saludo').value   = emp.prompt_saludo||'';
+  if (!emp.bot_activo) document.getElementById('bot-toggle').classList.remove('on');
+  showApp();
+}
+
+// Botón "Volver a organizaciones" (solo visible para super admin)
+async function volverOrgs() {
+  document.getElementById('app-screen').style.display = 'none';
+  currentEmpresa = null;
+  await showOrgSelector();
+}
+
+
+// ── CREAR ORGANIZACIÓN (super admin) ─────────────────────
+async function crearOrg() {
+  const empresa = document.getElementById('no-empresa').value.trim();
+  const email   = document.getElementById('no-email').value.trim();
+  const pass    = document.getElementById('no-pass').value;
+  const pass2   = document.getElementById('no-pass2').value;
+  const plan    = document.getElementById('no-plan').value;
+  const errBox  = document.getElementById('nueva-org-error');
+  const btn     = document.getElementById('btn-crear-org');
+
+  errBox.style.display = 'none';
+
+  if (!empresa || !email || !pass || !pass2) {
+    errBox.textContent = 'Completá todos los campos'; errBox.style.display='block'; return;
+  }
+  if (pass !== pass2) {
+    errBox.textContent = 'Las contraseñas no coinciden'; errBox.style.display='block'; return;
+  }
+  if (pass.length < 6) {
+    errBox.textContent = 'La contraseña debe tener al menos 6 caracteres'; errBox.style.display='block'; return;
+  }
+
+  btn.innerHTML = '<i class="ti ti-loader"></i> Creando...';
+  btn.disabled = true;
+
+  // Crear usuario en Supabase Auth (admin API via service role no está disponible en frontend)
+  // Usamos signUp — el nuevo usuario queda pendiente de confirmación
+  // Para evitar cerrar sesión del super admin, usamos una instancia separada
+  const sbAnon = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const { data: newUser, error: authErr } = await sbAnon.auth.signUp({ email, password: pass });
+
+  if (authErr) {
+    errBox.textContent = 'Error al crear usuario: ' + authErr.message;
+    errBox.style.display = 'block';
+    btn.innerHTML = '<i class="ti ti-plus"></i> Crear organización';
+    btn.disabled = false;
+    return;
+  }
+
+  if (!newUser?.user) {
+    errBox.textContent = 'No se pudo crear el usuario. ¿El email ya existe?';
+    errBox.style.display = 'block';
+    btn.innerHTML = '<i class="ti ti-plus"></i> Crear organización';
+    btn.disabled = false;
+    return;
+  }
+
+  // Crear cuenta y empresa via RPC (igual que el registro normal)
+  const { error: rpcErr } = await sbAnon.rpc('crear_cuenta_empresa', {
+    p_user_id: newUser.user.id,
+    p_email:   email,
+    p_empresa: empresa
+  });
+
+  if (rpcErr) {
+    errBox.textContent = 'Error al crear empresa: ' + rpcErr.message;
+    errBox.style.display = 'block';
+    btn.innerHTML = '<i class="ti ti-plus"></i> Crear organización';
+    btn.disabled = false;
+    return;
+  }
+
+  // Actualizar plan si no es premium
+  if (plan !== 'premium') {
+    const { data: empNueva } = await sb.from('empresas').select('id').eq('nombre', empresa).single();
+    if (empNueva) await sb.from('empresas').update({ plan }).eq('id', empNueva.id);
+  }
+
+  // Limpiar y cerrar modal
+  ['no-empresa','no-email','no-pass','no-pass2'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('no-plan').value = 'premium';
+  document.getElementById('modal-nueva-org').style.display = 'none';
+  btn.innerHTML = '<i class="ti ti-plus"></i> Crear organización';
+  btn.disabled = false;
+
+  showToast('Organización "' + empresa + '" creada correctamente');
+  await loadOrgs(); // refrescar grid
+}
+
+
+// ── SMART TAGS ────────────────────────────────────────
+const TAG_COLORS = ['#6c5ce7','#00b894','#e17055','#0984e3','#fd79a8','#fdcb6e','#00cec9','#a29bfe','#636e72','#d63031'];
+
+const DEFAULT_TAGS = [
+  {
+    id: 'oportunidad',
+    nombre: 'Oportunidad',
+    color: '#00b894',
+    fija: true,
+    descripcion: 'Asigná esta etiqueta únicamente si el lead confirma expresamente que quiere coordinar una visita presencial, una reunión, una llamada o una videollamada para conocer el desarrollo. No la uses si la persona está haciendo preguntas o recibiendo información. Esperá a que confirme que quiere avanzar en un contacto concreto.'
+  },
+  {
+    id: 'perdido',
+    nombre: 'Perdido',
+    color: '#e17055',
+    fija: true,
+    descripcion: 'Asigná esta etiqueta si el lead indica claramente que no está interesado, que ya compró en otro lado, que el presupuesto no le cierra o que no quiere continuar la conversación.'
+  }
+];
+
+let smartTags = [];
+let editingTagId = null;
+let selectedColor = TAG_COLORS[0];
+
+async function loadTags() {
+  if (!currentEmpresa) return;
+  const { data } = await sb.from('smart_tags')
+    .select('*')
+    .eq('empresa_id', currentEmpresa.id)
+    .order('created_at');
+
+  // Combinar fijas (siempre primero) con las custom
+  const custom = (data || []).map(t => ({ ...t, fija: false }));
+  smartTags = [...DEFAULT_TAGS, ...custom];
+  renderTags();
+}
+
+function renderTags() {
+  const list = document.getElementById('tags-list');
+  if (!list) return;
+  list.innerHTML = smartTags.map(tag => `
+    <div class="tag-item" id="tag-item-${tag.id}">
+      <div class="tag-item-header" onclick="toggleTag('${tag.id}')">
+        <span class="tag-pill" style="background:${tag.color}">${tag.nombre}</span>
+        ${tag.fija ? '<span class="tag-fixed-badge">Por defecto</span>' : ''}
+        <i class="ti ti-chevron-down tag-item-chevron"></i>
+      </div>
+      <div class="tag-item-body">
+        <textarea id="tag-desc-${tag.id}" placeholder="Describí cuándo el bot debe usar esta etiqueta...">${tag.descripcion || ''}</textarea>
+        <div class="tag-item-actions">
+          <button class="btn btn-sm btn-primary" onclick="saveTagDesc('${tag.id}')">
+            <i class="ti ti-device-floppy"></i> Guardar
+          </button>
+          ${!tag.fija ? `<button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" onclick="eliminarTag('${tag.id}')"><i class="ti ti-trash"></i> Eliminar</button>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleTag(id) {
+  const el = document.getElementById('tag-item-' + id);
+  el.classList.toggle('open');
+}
+
+async function saveTagDesc(id) {
+  const tag = smartTags.find(t => t.id === id);
+  if (!tag) return;
+  const desc = document.getElementById('tag-desc-' + id).value;
+
+  if (tag.fija) {
+    // Las fijas se guardan en empresas.smart_tags_config (JSON)
+    const config = smartTags.reduce((acc, t) => {
+      acc[t.id] = { descripcion: document.getElementById('tag-desc-' + t.id)?.value || t.descripcion };
+      return acc;
+    }, {});
+    await sb.from('empresas').update({ smart_tags_config: config }).eq('id', currentEmpresa.id);
+  } else {
+    await sb.from('smart_tags').update({ descripcion: desc }).eq('id', id);
+  }
+  tag.descripcion = desc;
+  showToast('Etiqueta guardada');
+}
+
+async function eliminarTag(id) {
+  if (!confirm('¿Eliminar esta etiqueta?')) return;
+  await sb.from('smart_tags').delete().eq('id', id);
+  smartTags = smartTags.filter(t => t.id !== id);
+  renderTags();
+  showToast('Etiqueta eliminada');
+}
+
+function abrirModalNuevoTag() {
+  editingTagId = null;
+  selectedColor = TAG_COLORS[0];
+  document.getElementById('modal-tag-title').textContent = 'Nueva smart tag';
+  document.getElementById('tag-nombre').value = '';
+  document.getElementById('tag-descripcion').value = '';
+  renderColorPicker();
+  document.getElementById('modal-tag').style.display = 'flex';
+}
+
+function cerrarModalTag() {
+  document.getElementById('modal-tag').style.display = 'none';
+}
+
+function renderColorPicker() {
+  const row = document.getElementById('color-picker-row');
+  row.innerHTML = TAG_COLORS.map(c => `
+    <div class="color-swatch ${c === selectedColor ? 'selected' : ''}"
+      style="background:${c}"
+      onclick="selectColor('${c}')"></div>
+  `).join('');
+}
+
+function selectColor(color) {
+  selectedColor = color;
+  renderColorPicker();
+}
+
+async function guardarTag() {
+  const nombre = document.getElementById('tag-nombre').value.trim();
+  const descripcion = document.getElementById('tag-descripcion').value.trim();
+  if (!nombre) { showToast('Ingresá un nombre para la etiqueta', 'error'); return; }
+
+  const { data, error } = await sb.from('smart_tags').insert({
+    empresa_id: currentEmpresa.id,
+    nombre,
+    color: selectedColor,
+    descripcion
+  }).select().single();
+
+  if (error) { showToast('Error al guardar', 'error'); return; }
+
+  smartTags.push({ ...data, fija: false });
+  renderTags();
+  cerrarModalTag();
+  showToast('Etiqueta creada');
+}
+
+// Cargar descripciones personalizadas de tags fijas desde empresas.smart_tags_config
+async function loadTagsConfig() {
+  if (!currentEmpresa?.smart_tags_config) return;
+  const config = currentEmpresa.smart_tags_config;
+  DEFAULT_TAGS.forEach(t => {
+    if (config[t.id]?.descripcion) t.descripcion = config[t.id].descripcion;
+  });
+}
+
+// ── TEMA CLARO / OSCURO ──────────────────────────────
+const THEME_KEY = 'prometeo-theme';
+function applyTheme(light) {
+  document.documentElement.setAttribute('data-theme', light ? 'light' : '');
+  // topnav icons
+  document.getElementById('icon-moon').style.display  = light ? 'none' : '';
+  document.getElementById('icon-sun').style.display   = light ? ''     : 'none';
+  document.getElementById('theme-toggle').title = light ? 'Modo oscuro' : 'Modo claro';
+  // org-screen icons
+  const m2 = document.getElementById('icon-moon2');
+  const s2 = document.getElementById('icon-sun2');
+  if (m2) m2.style.display = light ? 'none' : '';
+  if (s2) s2.style.display = light ? ''     : 'none';
+}
+function toggleTheme() {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  localStorage.setItem(THEME_KEY, isLight ? 'dark' : 'light');
+  applyTheme(!isLight);
+}
+(function() {
+  const saved = localStorage.getItem(THEME_KEY);
+  const sysLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+  applyTheme(saved === 'light' || (!saved && sysLight));
+})();
+
+// ── INIT ──────────────────────────────────────────────
+document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('reg-pass2').addEventListener('keydown', e=>{ if(e.key==='Enter') doRegister(); });
+checkSession();
+</script>
+</body>
+</html>
