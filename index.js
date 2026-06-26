@@ -2,7 +2,8 @@ import makeWASocket, {
   useMultiFileAuthState,
   DisconnectReason,
   fetchLatestBaileysVersion,
-  makeCacheableSignalKeyStore
+  makeCacheableSignalKeyStore,
+  downloadMediaMessage
 } from '@whiskeysockets/baileys'
 import express from 'express'
 import axios from 'axios'
@@ -198,22 +199,68 @@ async function conectarWhatsApp () {
       if (msg.key.remoteJid.endsWith('@g.us')) continue
 
       const from   = msg.key.remoteJid.replace('@s.whatsapp.net', '')
-      const text   = msg.message?.conversation
-                  || msg.message?.extendedTextMessage?.text
-                  || ''
       const nombre = msg.pushName || ''
+      const msgContent = msg.message
 
-      if (!text) continue
+      let text        = msgContent?.conversation
+                     || msgContent?.extendedTextMessage?.text
+                     || ''
+      let mediaType   = 'text'
+      let mediaBase64 = null
+      let mediaMime   = null
 
-      console.log(`📨 Mensaje de ${from}: ${text}`)
+      // Audio / PTT (notas de voz)
+      if (msgContent?.audioMessage || msgContent?.pttMessage) {
+        mediaType = 'audio'
+        try {
+          const buf = await downloadMediaMessage(msg, 'buffer', {}, { logger, reuploadRequest: sock.updateMediaMessage })
+          mediaBase64 = buf.toString('base64')
+          mediaMime   = msgContent?.audioMessage?.mimetype || msgContent?.pttMessage?.mimetype || 'audio/ogg; codecs=opus'
+          console.log(`🎙️  Audio de ${from} (${buf.length} bytes)`)
+        } catch (err) {
+          console.error('Error descargando audio:', err.message)
+        }
+      // Imagen
+      } else if (msgContent?.imageMessage) {
+        mediaType = 'image'
+        try {
+          const buf = await downloadMediaMessage(msg, 'buffer', {}, { logger, reuploadRequest: sock.updateMediaMessage })
+          mediaBase64 = buf.toString('base64')
+          mediaMime   = msgContent?.imageMessage?.mimetype || 'image/jpeg'
+          text        = msgContent?.imageMessage?.caption || ''
+          console.log(`🖼️  Imagen de ${from} (${buf.length} bytes)`)
+        } catch (err) {
+          console.error('Error descargando imagen:', err.message)
+        }
+      // Documento
+      } else if (msgContent?.documentMessage) {
+        mediaType = 'document'
+        try {
+          const buf = await downloadMediaMessage(msg, 'buffer', {}, { logger, reuploadRequest: sock.updateMediaMessage })
+          mediaBase64 = buf.toString('base64')
+          mediaMime   = msgContent?.documentMessage?.mimetype || 'application/octet-stream'
+          text        = msgContent?.documentMessage?.fileName || ''
+          console.log(`📄 Documento de ${from}: ${text}`)
+        } catch (err) {
+          console.error('Error descargando documento:', err.message)
+        }
+      }
+
+      // Ignorar mensajes vacíos sin media
+      if (mediaType === 'text' && !text) continue
+
+      if (mediaType === 'text') console.log(`📨 Mensaje de ${from}: ${text}`)
 
       try {
         await axios.post(N8N_WEBHOOK, {
-          canal:     'whatsapp',
+          canal:      'whatsapp',
           from,
           nombre,
-          mensaje:   text,
-          timestamp: Date.now()
+          mensaje:    text,
+          timestamp:  Date.now(),
+          mediaType,
+          mediaBase64,
+          mediaMime
         })
       } catch (err) {
         console.error('Error enviando a n8n:', err.message)

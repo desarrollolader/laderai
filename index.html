@@ -130,13 +130,17 @@ textarea{resize:vertical;min-height:80px;}
 
 /* CHAT */
 .chat-layout{display:flex;height:calc(100vh - 110px);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
-.chat-list{width:250px;border-right:1px solid var(--border);overflow-y:auto;background:var(--bg2);flex-shrink:0;}
+.chat-sidebar{width:260px;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--bg2);flex-shrink:0;}
+.chat-search-bar{padding:10px 10px 0;display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+.chat-search-bar input,.chat-search-bar select{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:7px 10px;color:var(--text);font-size:12px;outline:none;width:100%;font-family:inherit;}
+.chat-search-bar input:focus,.chat-search-bar select:focus{border-color:var(--accent);}
+.chat-list{flex:1;overflow-y:auto;}
 .chat-item{padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
 .chat-item:hover,.chat-item.active{background:var(--bg3);}
 .chat-item-name{font-size:13px;font-weight:500;color:var(--text);}
 .chat-item-preview{font-size:11px;color:var(--text3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .chat-item-time{font-size:10px;color:var(--text3);margin-top:3px;}
-.chat-main{flex:1;display:flex;flex-direction:column;background:var(--bg2);}
+.chat-main{flex:1;display:flex;flex-direction:column;background:var(--bg2);min-width:0;}
 .chat-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
 .chat-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;}
 .msg{max-width:68%;padding:9px 13px;border-radius:10px;font-size:13px;line-height:1.5;}
@@ -145,6 +149,13 @@ textarea{resize:vertical;min-height:80px;}
 .msg-time{font-size:10px;color:var(--text3);margin-top:3px;}
 .chat-input{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;}
 .chat-input input{flex:1;}
+.chat-contact{width:240px;border-left:1px solid var(--border);background:var(--bg2);overflow-y:auto;flex-shrink:0;display:none;}
+.chat-contact.visible{display:block;}
+.contact-section{padding:14px 16px;border-bottom:1px solid var(--border);}
+.contact-section-title{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:10px;font-weight:500;}
+.contact-field{margin-bottom:8px;}
+.contact-field-label{font-size:10px;color:var(--text3);margin-bottom:2px;}
+.contact-field-value{font-size:13px;color:var(--text);}
 .loading{text-align:center;padding:30px;color:var(--text3);font-size:13px;}
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
@@ -397,13 +408,43 @@ textarea{resize:vertical;min-height:80px;}
         <!-- CONVERSACIONES -->
         <div class="section" id="sec-conversaciones">
           <div class="chat-layout">
-            <div class="chat-list" id="chat-list"><div class="loading">Cargando...</div></div>
+            <div class="chat-sidebar">
+              <div class="chat-search-bar">
+                <input id="chat-search" placeholder="Buscar por nombre..." oninput="filtrarChats()">
+                <select id="chat-filter-tag" onchange="filtrarChats()">
+                  <option value="">Todos los tags</option>
+                </select>
+              </div>
+              <div class="chat-list" id="chat-list"><div class="loading">Cargando...</div></div>
+            </div>
             <div class="chat-main">
               <div class="chat-header" id="chat-header"><div style="color:var(--text3);font-size:13px">Seleccioná un lead</div></div>
               <div class="chat-messages" id="chat-messages"></div>
               <div class="chat-input" id="chat-input" style="display:none">
                 <input placeholder="Responder manualmente..." id="manual-msg" onkeydown="if(event.key==='Enter')enviarManual()">
                 <button class="btn btn-primary btn-sm" onclick="enviarManual()"><i class="ti ti-send"></i></button>
+              </div>
+            </div>
+            <!-- PANEL DE CONTACTO -->
+            <div class="chat-contact" id="chat-contact">
+              <div class="contact-section">
+                <div class="contact-section-title">Contacto</div>
+                <div class="contact-field"><div class="contact-field-label">Nombre</div><div class="contact-field-value" id="cp-nombre">—</div></div>
+                <div class="contact-field"><div class="contact-field-label">Teléfono</div><div class="contact-field-value" id="cp-telefono">—</div></div>
+                <div class="contact-field"><div class="contact-field-label">Canal</div><div class="contact-field-value" id="cp-canal">—</div></div>
+                <div class="contact-field"><div class="contact-field-label">Primer contacto</div><div class="contact-field-value" id="cp-fecha">—</div></div>
+              </div>
+              <div class="contact-section">
+                <div class="contact-section-title">Tags</div>
+                <div id="cp-tags" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+              </div>
+              <div class="contact-section">
+                <div class="contact-section-title">Intención detectada</div>
+                <div id="cp-intencion" style="font-size:12px;color:var(--text2);line-height:1.5;">—</div>
+              </div>
+              <div class="contact-section" style="border-bottom:none">
+                <div class="contact-section-title">Bot</div>
+                <div id="cp-bot-status" style="font-size:12px;"></div>
               </div>
             </div>
           </div>
@@ -531,7 +572,33 @@ textarea{resize:vertical;min-height:80px;}
             </div>
             <div class="form-group">
               <label class="form-label">¿Cuándo debe aplicar esta etiqueta?</label>
-              <textarea id="tag-descripcion" style="min-height:110px" placeholder="Describí la situación o contexto en que el bot debe asignar esta etiqueta al lead..."></textarea>
+              <textarea id="tag-descripcion" style="min-height:90px" placeholder="Describí la situación o contexto en que el bot debe asignar esta etiqueta al lead..."></textarea>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;display:flex;flex-direction:column;gap:14px;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div class="toggle" id="tag-toggle-bot" onclick="this.classList.toggle('on');document.getElementById('tag-bot-hint').style.display=this.classList.contains('on')?'block':'none'"></div>
+                <div>
+                  <div style="font-size:13px;font-weight:500">Apagar bot al detectar</div>
+                  <div style="font-size:11px;color:var(--text3)">El asistente se pausa automáticamente en esa conversación</div>
+                </div>
+              </div>
+              <div id="tag-bot-hint" style="display:none;font-size:11px;color:var(--amber);background:rgba(253,203,110,.08);border-radius:6px;padding:8px 10px;">
+                <i class="ti ti-info-circle"></i> El bot dejará de responder hasta que un humano lo reactive manualmente.
+              </div>
+              <div style="height:1px;background:var(--border);"></div>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div class="toggle" id="tag-toggle-notif" onclick="this.classList.toggle('on');document.getElementById('tag-notif-phone-wrap').style.display=this.classList.contains('on')?'block':'none'"></div>
+                <div>
+                  <div style="font-size:13px;font-weight:500">Notificar por WhatsApp</div>
+                  <div style="font-size:11px;color:var(--text3)">Manda un mensaje al número configurado cuando se detecta este tag</div>
+                </div>
+              </div>
+              <div id="tag-notif-phone-wrap" style="display:none;">
+                <label class="form-label">Número a notificar (con código de país)</label>
+                <input id="tag-notif-phone" placeholder="Ej: 5491112345678" style="margin-bottom:8px;">
+                <label class="form-label">Mensaje de notificación</label>
+                <textarea id="tag-notif-mensaje" style="min-height:60px" placeholder="Ej: 🔔 Nueva oportunidad detectada con {{nombre}} — {{intencion}}"></textarea>
+              </div>
             </div>
             <div class="form-actions">
               <button class="btn" onclick="cerrarModalTag()">Cancelar</button>
@@ -839,12 +906,39 @@ async function loadDashboard() {
 }
 
 // ── LEADS ────────────────────────────────────────────
+let allLeadsData = [];
+
 async function loadLeads() {
   if (!currentEmpresa) return;
   const { data } = await sb.from('leads').select('*').eq('empresa_id', currentEmpresa.id).order('created_at',{ascending:false});
+  allLeadsData = data || [];
+  renderLeadsTable(allLeadsData);
+}
+
+function renderLeadsTable(data) {
   const el = document.getElementById('leads-content');
   if (!data||data.length===0) { el.innerHTML='<div class="empty-state"><i class="ti ti-users"></i><p>No hay leads todavía.</p></div>'; return; }
-  el.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Contacto</th><th>Canal</th><th>Intención</th><th>Presupuesto</th><th>Fecha</th></tr></thead><tbody>${
+  el.innerHTML=`
+    <div style="display:flex;gap:10px;margin-bottom:14px;align-items:flex-end;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Desde</label>
+        <input type="date" id="exp-desde" style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:7px 10px;color:var(--text);font-size:13px;font-family:inherit;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Hasta</label>
+        <input type="date" id="exp-hasta" style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:7px 10px;color:var(--text);font-size:13px;font-family:inherit;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Tag</label>
+        <select id="exp-tag" style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:7px 10px;color:var(--text);font-size:13px;font-family:inherit;">
+          <option value="">Todos</option>
+          ${smartTags.map(t=>`<option value="${t.nombre}">${t.nombre}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn btn-sm" onclick="filtrarYExportar()" style="margin-bottom:1px;"><i class="ti ti-filter"></i> Filtrar</button>
+      <button class="btn btn-primary btn-sm" onclick="exportarExcel()" style="margin-bottom:1px;margin-left:auto;"><i class="ti ti-table-export"></i> Descargar Excel</button>
+    </div>
+    <div class="table-wrap" id="leads-table-wrap"><table><thead><tr><th>Contacto</th><th>Canal</th><th>Intención</th><th>Presupuesto</th><th>Fecha</th></tr></thead><tbody>${
     data.map(l=>`<tr>
       <td><div style="display:flex;align-items:center;gap:8px"><div class="avatar">${(l.nombre||l.contacto||'?').substring(0,2).toUpperCase()}</div><div><div class="td-primary">${l.nombre||'—'}</div><div style="font-size:11px;color:var(--text3)">${l.contacto}</div></div></div></td>
       <td><span class="badge badge-blue">${l.canal}</span></td>
@@ -855,37 +949,147 @@ async function loadLeads() {
   }</tbody></table></div>`;
 }
 
+function filtrarYExportar() {
+  const desde = document.getElementById('exp-desde')?.value;
+  const hasta = document.getElementById('exp-hasta')?.value;
+  const tag   = document.getElementById('exp-tag')?.value;
+  let filtered = [...allLeadsData];
+  if (desde) filtered = filtered.filter(l => new Date(l.created_at) >= new Date(desde));
+  if (hasta) filtered = filtered.filter(l => new Date(l.created_at) <= new Date(hasta + 'T23:59:59'));
+  if (tag)   filtered = filtered.filter(l => (l.tags||[]).includes(tag) || (l.intencion||'').toLowerCase().includes(tag.toLowerCase()));
+  const wrap = document.getElementById('leads-table-wrap');
+  if (wrap) wrap.querySelector('tbody').innerHTML = filtered.map(l=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:8px"><div class="avatar">${(l.nombre||l.contacto||'?').substring(0,2).toUpperCase()}</div><div><div class="td-primary">${l.nombre||'—'}</div><div style="font-size:11px;color:var(--text3)">${l.contacto}</div></div></div></td>
+    <td><span class="badge badge-blue">${l.canal}</span></td>
+    <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.intencion||'—'}</td>
+    <td>${l.presupuesto_max?'USD '+Number(l.presupuesto_max).toLocaleString():'—'}</td>
+    <td>${new Date(l.created_at).toLocaleDateString('es-AR')}</td>
+  </tr>`).join('');
+  showToast(`${filtered.length} leads filtrados`);
+  window._leadsParaExportar = filtered;
+}
+
+function exportarExcel() {
+  const desde = document.getElementById('exp-desde')?.value;
+  const hasta = document.getElementById('exp-hasta')?.value;
+  const tag   = document.getElementById('exp-tag')?.value;
+  let data = window._leadsParaExportar || allLeadsData;
+  if (!window._leadsParaExportar) {
+    if (desde) data = data.filter(l => new Date(l.created_at) >= new Date(desde));
+    if (hasta) data = data.filter(l => new Date(l.created_at) <= new Date(hasta + 'T23:59:59'));
+  }
+  if (!data.length) { showToast('No hay datos para exportar', 'error'); return; }
+
+  const cols = ['nombre','contacto','canal','intencion','presupuesto_max','created_at','updated_at','bot_pausado'];
+  const header = cols.join('\t');
+  const rows = data.map(l => cols.map(c => {
+    let v = l[c] ?? '';
+    if (c === 'created_at' || c === 'updated_at') v = v ? new Date(v).toLocaleString('es-AR') : '';
+    return String(v).replace(/\t/g,' ');
+  }).join('\t'));
+  const tsv = [header, ...rows].join('\n');
+  const blob = new Blob(['﻿' + tsv], { type: 'text/tab-separated-values;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `leads_${new Date().toISOString().slice(0,10)}.xls`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast(`${data.length} leads exportados`);
+}
+
 // ── CONVERSACIONES ───────────────────────────────────
+let allChatsData = [];
+
 async function loadConversaciones() {
   if (!currentEmpresa) return;
   const { data: leads } = await sb.from('leads').select('*').eq('empresa_id', currentEmpresa.id).order('updated_at',{ascending:false});
+  allChatsData = leads || [];
+
+  // Poblar filtro de tags
+  const sel = document.getElementById('chat-filter-tag');
+  if (sel) {
+    const tagsOpts = smartTags.map(t=>`<option value="${t.nombre}">${t.nombre}</option>`).join('');
+    sel.innerHTML = '<option value="">Todos los tags</option>' + tagsOpts;
+  }
+
+  renderChatList(allChatsData);
+}
+
+function renderChatList(leads) {
   const list = document.getElementById('chat-list');
   if (!leads||leads.length===0) { list.innerHTML='<div class="loading">Sin conversaciones</div>'; return; }
   list.innerHTML = leads.map(l=>`
-    <div class="chat-item" onclick="loadMensajes('${l.id}','${(l.nombre||l.contacto).replace(/'/g,"\\'")}',this)">
+    <div class="chat-item" data-id="${l.id}" data-nombre="${(l.nombre||l.contacto||'').replace(/"/g,'')}" onclick="loadMensajes('${l.id}','${(l.nombre||l.contacto||'').replace(/'/g,"\\'")}',this,${JSON.stringify(l).replace(/</g,'\\u003c')})">
       <div style="display:flex;align-items:center;gap:8px">
         <div class="avatar" style="width:26px;height:26px;font-size:9px">${(l.nombre||l.contacto||'?').substring(0,2).toUpperCase()}</div>
         <div class="chat-item-name" style="flex:1">${l.nombre||l.contacto}</div>
+        ${l.bot_pausado?'<span style="width:7px;height:7px;border-radius:50%;background:var(--amber);flex-shrink:0" title="Bot pausado"></span>':''}
       </div>
       <div class="chat-item-preview">${l.intencion||'Sin intención detectada'}</div>
       <div class="chat-item-time">${l.canal} · ${new Date(l.updated_at||l.created_at).toLocaleDateString('es-AR')}</div>
     </div>`).join('');
 }
 
-async function loadMensajes(leadId, nombre, el) {
+function filtrarChats() {
+  const q   = (document.getElementById('chat-search')?.value||'').toLowerCase();
+  const tag = (document.getElementById('chat-filter-tag')?.value||'');
+  let filtered = allChatsData;
+  if (q)   filtered = filtered.filter(l=>(l.nombre||l.contacto||'').toLowerCase().includes(q));
+  if (tag) filtered = filtered.filter(l=>(l.intencion||'').toLowerCase().includes(tag.toLowerCase()));
+  renderChatList(filtered);
+}
+
+async function loadMensajes(leadId, nombre, el, leadData) {
   activeChatLeadId = leadId;
   activeChatNombre = nombre;
   document.querySelectorAll('.chat-item').forEach(i=>i.classList.remove('active'));
   el?.classList.add('active');
+
+  // Panel de contacto
+  const lead = leadData || allChatsData.find(l=>l.id===leadId) || {};
+  const cp = document.getElementById('chat-contact');
+  if (cp) {
+    cp.classList.add('visible');
+    document.getElementById('cp-nombre').textContent    = lead.nombre || '—';
+    document.getElementById('cp-telefono').textContent  = lead.contacto || '—';
+    document.getElementById('cp-canal').textContent     = lead.canal || '—';
+    document.getElementById('cp-fecha').textContent     = lead.created_at ? new Date(lead.created_at).toLocaleDateString('es-AR') : '—';
+    document.getElementById('cp-intencion').textContent = lead.intencion || '—';
+    const botEl = document.getElementById('cp-bot-status');
+    if (botEl) botEl.innerHTML = lead.bot_pausado
+      ? '<span style="color:var(--amber)"><i class="ti ti-pause"></i> Pausado</span>'
+      : '<span style="color:var(--green)"><i class="ti ti-robot"></i> Activo</span>';
+    // Tags del lead
+    const tagsEl = document.getElementById('cp-tags');
+    if (tagsEl) {
+      const leadTags = lead.tags || [];
+      tagsEl.innerHTML = leadTags.length
+        ? leadTags.map(t=>{
+            const tag = smartTags.find(st=>st.nombre===t||st.id===t);
+            return `<span class="badge" style="background:${tag?.color||'var(--accent)'}22;color:${tag?.color||'var(--accent2)'}">${t}</span>`;
+          }).join('')
+        : '<span style="font-size:12px;color:var(--text3)">Sin tags</span>';
+    }
+  }
+
+  // Header con estado bot
+  const { data: freshLead } = await sb.from('leads').select('bot_pausado').eq('id', leadId).single();
+  const pausado = freshLead?.bot_pausado || false;
   document.getElementById('chat-header').innerHTML=`
     <div class="avatar">${nombre.substring(0,2).toUpperCase()}</div>
-    <div><div style="font-size:13px;font-weight:500">${nombre}</div></div>
-    <button class="btn btn-sm" style="margin-left:auto" onclick="toggleBot('${leadId}')"><i class="ti ti-user-check"></i> Tomar control</button>`;
-  document.getElementById('chat-input').style.display='flex';
+    <div><div style="font-size:13px;font-weight:500">${nombre}</div>
+    <div style="font-size:11px;color:var(--text3)">${pausado?'Bot pausado':'Bot activo'}</div></div>
+    <button class="btn btn-sm" style="margin-left:auto;${pausado?'border-color:var(--green);color:var(--green)':''}" onclick="toggleBot('${leadId}')">
+      <i class="ti ti-${pausado?'robot':'user-check'}"></i> ${pausado?'Reactivar bot':'Tomar control'}
+    </button>`;
+  document.getElementById('chat-input').style.display = pausado ? 'flex' : 'none';
+
+  // Mensajes con deduplicación por id
   const { data: msgs } = await sb.from('mensajes').select('*').eq('lead_id', leadId).order('created_at',{ascending:true});
   const msgsEl = document.getElementById('chat-messages');
   if (!msgs||msgs.length===0) { msgsEl.innerHTML='<div class="loading">Sin mensajes aún</div>'; return; }
-  msgsEl.innerHTML = msgs.map(m=>`
+  const seen = new Set();
+  const unique = msgs.filter(m=>{ if(seen.has(m.id)){return false;} seen.add(m.id); return true; });
+  msgsEl.innerHTML = unique.map(m=>`
     <div class="msg ${m.direccion==='entrante'?'msg-in':'msg-out'}">
       ${m.contenido}
       <div class="msg-time">${new Date(m.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}${m.direccion==='saliente'?' · Bot':''}</div>
@@ -896,8 +1100,23 @@ async function loadMensajes(leadId, nombre, el) {
 async function toggleBot(leadId) {
   const { data: lead } = await sb.from('leads').select('bot_pausado').eq('id',leadId).single();
   if (!lead) return;
-  await sb.from('leads').update({bot_pausado:!lead.bot_pausado}).eq('id',leadId);
-  showToast(lead.bot_pausado ? 'Bot reactivado — el bot responde automaticamente' : 'Bot pausado — podés responder manualmente');
+  const nuevo = !lead.bot_pausado;
+  await sb.from('leads').update({bot_pausado:nuevo}).eq('id',leadId);
+  showToast(nuevo ? 'Bot pausado — podés responder manualmente' : 'Bot reactivado');
+  // Refrescar header e input
+  const nombre = activeChatNombre;
+  document.getElementById('chat-header').innerHTML=`
+    <div class="avatar">${nombre.substring(0,2).toUpperCase()}</div>
+    <div><div style="font-size:13px;font-weight:500">${nombre}</div>
+    <div style="font-size:11px;color:var(--text3)">${nuevo?'Bot pausado':'Bot activo'}</div></div>
+    <button class="btn btn-sm" style="margin-left:auto;${nuevo?'border-color:var(--green);color:var(--green)':''}" onclick="toggleBot('${leadId}')">
+      <i class="ti ti-${nuevo?'robot':'user-check'}"></i> ${nuevo?'Reactivar bot':'Tomar control'}
+    </button>`;
+  document.getElementById('chat-input').style.display = nuevo ? 'flex' : 'none';
+  const botEl = document.getElementById('cp-bot-status');
+  if (botEl) botEl.innerHTML = nuevo
+    ? '<span style="color:var(--amber)"><i class="ti ti-pause"></i> Pausado</span>'
+    : '<span style="color:var(--green)"><i class="ti ti-robot"></i> Activo</span>';
 }
 
 
@@ -1258,10 +1477,27 @@ function renderTags() {
       <div class="tag-item-header" onclick="toggleTag('${tag.id}')">
         <span class="tag-pill" style="background:${tag.color}">${tag.nombre}</span>
         ${tag.fija ? '<span class="tag-fixed-badge">Por defecto</span>' : ''}
+        ${tag.apagar_bot ? '<span class="tag-fixed-badge" style="color:var(--amber)"><i class="ti ti-pause"></i> Pausa bot</span>' : ''}
+        ${tag.notificar_wsp ? '<span class="tag-fixed-badge" style="color:var(--green)"><i class="ti ti-brand-whatsapp"></i> Notifica</span>' : ''}
         <i class="ti ti-chevron-down tag-item-chevron"></i>
       </div>
       <div class="tag-item-body">
         <textarea id="tag-desc-${tag.id}" placeholder="Describí cuándo el bot debe usar esta etiqueta...">${tag.descripcion || ''}</textarea>
+        ${!tag.fija ? `
+        <div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-top:10px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="toggle ${tag.apagar_bot?'on':''}" id="tag-abot-${tag.id}" onclick="this.classList.toggle('on')"></div>
+            <div style="font-size:12px;font-weight:500">Apagar bot al detectar</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="toggle ${tag.notificar_wsp?'on':''}" id="tag-notif-${tag.id}" onclick="this.classList.toggle('on');document.getElementById('tag-notif-extra-${tag.id}').style.display=this.classList.contains('on')?'flex':'none'"></div>
+            <div style="font-size:12px;font-weight:500">Notificar por WhatsApp</div>
+          </div>
+          <div id="tag-notif-extra-${tag.id}" style="display:${tag.notificar_wsp?'flex':'none'};flex-direction:column;gap:6px;">
+            <input id="tag-nphone-${tag.id}" placeholder="Número (Ej: 5491112345678)" value="${tag.notificar_telefono||''}" style="font-size:12px;">
+            <textarea id="tag-nmsg-${tag.id}" style="min-height:50px;font-size:12px;" placeholder="Mensaje de notificación...">${tag.notificar_mensaje||''}</textarea>
+          </div>
+        </div>` : ''}
         <div class="tag-item-actions">
           <button class="btn btn-sm btn-primary" onclick="saveTagDesc('${tag.id}')">
             <i class="ti ti-device-floppy"></i> Guardar
@@ -1281,19 +1517,27 @@ function toggleTag(id) {
 async function saveTagDesc(id) {
   const tag = smartTags.find(t => t.id === id);
   if (!tag) return;
-  const desc = document.getElementById('tag-desc-' + id).value;
+  const desc = document.getElementById('tag-desc-' + id)?.value || '';
 
   if (tag.fija) {
-    // Las fijas se guardan en empresas.smart_tags_config (JSON)
     const config = smartTags.reduce((acc, t) => {
       acc[t.id] = { descripcion: document.getElementById('tag-desc-' + t.id)?.value || t.descripcion };
       return acc;
     }, {});
     await sb.from('empresas').update({ smart_tags_config: config }).eq('id', currentEmpresa.id);
+    tag.descripcion = desc;
   } else {
-    await sb.from('smart_tags').update({ descripcion: desc }).eq('id', id);
+    const apagar_bot      = document.getElementById('tag-abot-' + id)?.classList.contains('on') || false;
+    const notificar_wsp   = document.getElementById('tag-notif-' + id)?.classList.contains('on') || false;
+    const notificar_telefono = document.getElementById('tag-nphone-' + id)?.value.trim() || '';
+    const notificar_mensaje  = document.getElementById('tag-nmsg-' + id)?.value.trim() || '';
+    const { error } = await sb.from('smart_tags').update({
+      descripcion: desc, apagar_bot, notificar_wsp, notificar_telefono, notificar_mensaje
+    }).eq('id', id);
+    if (error) { showToast('Error al guardar: ' + error.message, 'error'); return; }
+    Object.assign(tag, { descripcion: desc, apagar_bot, notificar_wsp, notificar_telefono, notificar_mensaje });
   }
-  tag.descripcion = desc;
+  renderTags();
   showToast('Etiqueta guardada');
 }
 
@@ -1311,6 +1555,12 @@ function abrirModalNuevoTag() {
   document.getElementById('modal-tag-title').textContent = 'Nueva smart tag';
   document.getElementById('tag-nombre').value = '';
   document.getElementById('tag-descripcion').value = '';
+  const tb = document.getElementById('tag-toggle-bot');
+  const tn = document.getElementById('tag-toggle-notif');
+  if (tb) { tb.classList.remove('on'); document.getElementById('tag-bot-hint').style.display='none'; }
+  if (tn) { tn.classList.remove('on'); document.getElementById('tag-notif-phone-wrap').style.display='none'; }
+  document.getElementById('tag-notif-phone').value = '';
+  document.getElementById('tag-notif-mensaje').value = '';
   renderColorPicker();
   document.getElementById('modal-tag').style.display = 'flex';
 }
@@ -1334,18 +1584,22 @@ function selectColor(color) {
 }
 
 async function guardarTag() {
-  const nombre = document.getElementById('tag-nombre').value.trim();
-  const descripcion = document.getElementById('tag-descripcion').value.trim();
+  const nombre             = document.getElementById('tag-nombre').value.trim();
+  const descripcion        = document.getElementById('tag-descripcion').value.trim();
+  const apagar_bot         = document.getElementById('tag-toggle-bot')?.classList.contains('on') || false;
+  const notificar_wsp      = document.getElementById('tag-toggle-notif')?.classList.contains('on') || false;
+  const notificar_telefono = document.getElementById('tag-notif-phone')?.value.trim() || '';
+  const notificar_mensaje  = document.getElementById('tag-notif-mensaje')?.value.trim() || '';
+
   if (!nombre) { showToast('Ingresá un nombre para la etiqueta', 'error'); return; }
 
   const { data, error } = await sb.from('smart_tags').insert({
     empresa_id: currentEmpresa.id,
-    nombre,
-    color: selectedColor,
-    descripcion
+    nombre, color: selectedColor, descripcion,
+    apagar_bot, notificar_wsp, notificar_telefono, notificar_mensaje
   }).select().single();
 
-  if (error) { showToast('Error al guardar', 'error'); return; }
+  if (error) { showToast('Error al guardar: ' + error.message, 'error'); return; }
 
   smartTags.push({ ...data, fija: false });
   renderTags();
