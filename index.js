@@ -174,7 +174,7 @@ async function conectarWhatsApp () {
       keys: makeCacheableSignalKeyStore(state.keys, logger)
     },
     printQRInTerminal: false,
-    browser: ['Prometeo CRM', 'Chrome', '1.0.0']
+    browser: ['Lader CRM', 'Chrome', '1.0.0']
   })
 
   sock.ev.on('creds.update', saveCreds)

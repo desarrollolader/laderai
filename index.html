@@ -3,27 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Prometeo CRM</title>
+<title>Lader CRM</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
 :root {
-  --bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a24;
-  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
-  --text:#f0f0f5;--text2:#9090a8;--text3:#5a5a72;
-  --accent:#6c5ce7;--accent2:#a29bfe;
-  --green:#00b894;--amber:#fdcb6e;--red:#e17055;--blue:#74b9ff;
+  --bg:#0d0a1a;--bg2:#1e173f;--bg3:#261b4a;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#f0f0f8;--text2:#b8a8d4;--text3:#6a5a8a;
+  --accent:#e1359d;--accent2:#ae5bf6;
+  --green:#b7f200;--amber:#fdcb6e;--red:#e17055;--blue:#74b9ff;
   --radius:12px;--radius-sm:8px;
 }
 [data-theme="light"] {
-  --bg:#f0f2f5;--bg2:#ffffff;--bg3:#f0f2f5;
+  --bg:#f0f0f8;--bg2:#ffffff;--bg3:#ededed;
   --border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.13);
-  --text:#1a1a2e;--text2:#4a4a6a;--text3:#8888a8;
-  --accent:#6c5ce7;--accent2:#5a4bd4;
-  --green:#00976e;--amber:#b88a00;--red:#c0502e;--blue:#2472c8;
+  --text:#1e173f;--text2:#4a3a6a;--text3:#8a7aaa;
+  --accent:#5e17ea;--accent2:#e1359d;
+  --green:#4a6a00;--amber:#b88a00;--red:#c0502e;--blue:#2472c8;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;font-size:14px;}
+body{background:var(--bg);color:var(--text);font-family:'Poppins',system-ui,sans-serif;font-size:14px;}
 
 /* AUTH */
 #auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);}
@@ -68,7 +71,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
 .nav-section{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);padding:12px 10px 5px;}
 .nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--radius-sm);cursor:pointer;color:var(--text2);font-size:13px;transition:all .12s;}
 .nav-item:hover{background:var(--bg3);color:var(--text);}
-.nav-item.active{background:rgba(108,92,231,.15);color:var(--accent2);}
+.nav-item.active{background:rgba(225,53,157,.15);color:var(--accent2);}
 .nav-item i{font-size:16px;}
 .nav-badge{margin-left:auto;background:var(--accent);color:white;font-size:10px;padding:2px 6px;border-radius:20px;}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
@@ -104,8 +107,8 @@ tr:hover td{background:var(--bg3);}
 .badge-amber{background:rgba(253,203,110,.15);color:var(--amber);}
 .badge-red{background:rgba(225,112,85,.15);color:var(--red);}
 .badge-blue{background:rgba(116,185,255,.15);color:var(--blue);}
-.badge-purple{background:rgba(108,92,231,.15);color:var(--accent2);}
-.avatar{width:30px;height:30px;border-radius:50%;background:rgba(108,92,231,.2);color:var(--accent2);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;}
+.badge-purple{background:rgba(225,53,157,.15);color:var(--accent2);}
+.avatar{width:30px;height:30px;border-radius:50%;background:rgba(225,53,157,.2);color:var(--accent2);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;}
 
 /* FORM */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
@@ -145,7 +148,7 @@ textarea{resize:vertical;min-height:80px;}
 .chat-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;}
 .msg{max-width:68%;padding:9px 13px;border-radius:10px;font-size:13px;line-height:1.5;}
 .msg-in{background:var(--bg3);color:var(--text2);align-self:flex-start;border-bottom-left-radius:3px;}
-.msg-out{background:rgba(108,92,231,.18);color:var(--accent2);align-self:flex-end;border-bottom-right-radius:3px;}
+.msg-out{background:rgba(225,53,157,.18);color:var(--accent2);align-self:flex-end;border-bottom-right-radius:3px;}
 .msg-time{font-size:10px;color:var(--text3);margin-top:3px;}
 .chat-input{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;}
 .chat-input input{flex:1;}
@@ -179,7 +182,7 @@ textarea{resize:vertical;min-height:80px;}
 .org-search:focus{outline:none;border-color:var(--accent);}
 .org-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
 .org-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:border-color .15s,box-shadow .15s;}
-.org-card:hover{border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,92,231,.12);}
+.org-card:hover{border-color:var(--accent);box-shadow:0 0 0 3px rgba(225,53,157,.12);}
 .org-card-top{height:110px;background:var(--bg3);display:flex;align-items:center;justify-content:center;position:relative;}
 .org-card-clone{position:absolute;top:10px;right:10px;font-size:11px;color:var(--text3);display:flex;align-items:center;gap:4px;opacity:0;transition:opacity .15s;}
 .org-card:hover .org-card-clone{opacity:1;}
@@ -187,8 +190,8 @@ textarea{resize:vertical;min-height:80px;}
 .org-card-body{padding:14px 16px 0;}
 .org-card-name{font-size:15px;font-weight:600;color:var(--text);margin-bottom:2px;}
 .org-card-plan{font-size:12px;color:var(--text3);margin-bottom:14px;}
-.org-card-btn{display:block;width:100%;padding:10px;background:rgba(108,92,231,.1);color:var(--accent);border:none;border-radius:0 0 var(--radius) var(--radius);font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:background .15s;}
-.org-card:hover .org-card-btn{background:rgba(108,92,231,.2);}
+.org-card-btn{display:block;width:100%;padding:10px;background:rgba(225,53,157,.1);color:var(--accent);border:none;border-radius:0 0 var(--radius) var(--radius);font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:background .15s;}
+.org-card:hover .org-card-btn{background:rgba(225,53,157,.2);}
 .org-empty{color:var(--text3);font-size:14px;padding:40px 0;}
 /* ── SMART TAGS ───────────────────────────────────────── */
 .tags-list{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
@@ -211,7 +214,7 @@ textarea{resize:vertical;min-height:80px;}
 
 .org-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
 
-.super-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;background:rgba(108,92,231,.15);color:var(--accent2);border-radius:20px;padding:3px 10px;font-weight:600;}
+.super-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;background:rgba(225,53,157,.15);color:var(--accent2);border-radius:20px;padding:3px 10px;font-weight:600;}
 
 </style>
 </head>
@@ -224,7 +227,7 @@ textarea{resize:vertical;min-height:80px;}
   <div class="org-header">
     <div class="org-header-logo">
       <div class="org-header-logo-icon"><i class="ti ti-bolt" style="color:white;font-size:14px"></i></div>
-      Prometeo CRM
+      Lader CRM
     </div>
     <div style="display:flex;align-items:center;gap:12px;">
       <span class="super-badge"><i class="ti ti-shield-check"></i> Super Admin</span>
@@ -297,7 +300,7 @@ textarea{resize:vertical;min-height:80px;}
   <div class="auth-box">
     <div class="auth-logo">
       <div class="auth-logo-icon"><i class="ti ti-bolt" style="color:white;font-size:22px"></i></div>
-      <div class="auth-title">Prometeo CRM</div>
+      <div class="auth-title">Lader CRM</div>
       <div class="auth-sub">Plataforma de bots inmobiliarios</div>
     </div>
 
@@ -355,7 +358,7 @@ textarea{resize:vertical;min-height:80px;}
   <div class="topnav">
     <div class="topnav-logo">
       <div class="topnav-logo-icon"><i class="ti ti-bolt" style="color:white;font-size:14px"></i></div>
-      Prometeo
+      Lader
     </div>
     <div class="topnav-sep"></div>
     <div class="empresa-name" id="empresa-display">—</div>
@@ -374,7 +377,6 @@ textarea{resize:vertical;min-height:80px;}
         <div class="nav-item active" onclick="showSection('dashboard',this)"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
         <div class="nav-item" onclick="showSection('leads',this)"><i class="ti ti-users"></i> Leads <span class="nav-badge" id="badge-leads">0</span></div>
         <div class="nav-item" onclick="showSection('conversaciones',this)"><i class="ti ti-message-2"></i> Conversaciones</div>
-        <div class="nav-item" onclick="showSection('citas',this)"><i class="ti ti-calendar"></i> Citas</div>
         <div class="nav-section">Configuración</div>
         <div class="nav-item" onclick="showSection('empresa',this)"><i class="ti ti-settings"></i> Mi empresa</div>
         <div class="nav-item" onclick="showSection('bot',this)"><i class="ti ti-robot"></i> Bot</div>
@@ -457,9 +459,6 @@ textarea{resize:vertical;min-height:80px;}
           </div>
         </div>
 
-        <!-- CITAS -->
-        <div class="section" id="sec-citas"><div id="citas-content"><div class="loading">Cargando...</div></div></div>
-
         <!-- EMPRESA -->
         <div class="section" id="sec-empresa">
           <div class="card">
@@ -493,7 +492,7 @@ textarea{resize:vertical;min-height:80px;}
                 <div id="wsp-status-badge" class="badge badge-red" style="margin-left:auto;">Desconectado</div>
               </div>
               <div id="wsp-disconnected">
-                <p style="font-size:12px;color:var(--text3);margin-bottom:14px;">Conectá tu línea de WhatsApp para que Zoe responda automáticamente a tus clientes.</p>
+                <p style="font-size:12px;color:var(--text3);margin-bottom:14px;">Conectá tu línea de WhatsApp para que el agente responda automáticamente a tus clientes.</p>
                 <button class="btn btn-primary btn-full" onclick="conectarWhatsApp()">
                   <i class="ti ti-qrcode"></i> Conectar WhatsApp
                 </button>
@@ -862,6 +861,7 @@ async function showApp() {
   if (btnVolver) btnVolver.style.display = sa ? 'flex' : 'none';
   loadDashboard();
   checkWspStatus();
+  restoreRoute();
 }
 
 // ── EMPRESA ──────────────────────────────────────────
@@ -1051,7 +1051,7 @@ function renderChatList(leads) {
   const list = document.getElementById('chat-list');
   if (!leads||leads.length===0) { list.innerHTML='<div class="loading">Sin conversaciones</div>'; return; }
   list.innerHTML = leads.map(l=>`
-    <div class="chat-item" data-id="${l.id}" data-nombre="${(l.nombre||l.contacto||'').replace(/"/g,'')}" onclick="loadMensajes('${l.id}','${(l.nombre||l.contacto||'').replace(/'/g,"\\'")}',this,${JSON.stringify(l).replace(/</g,'\\u003c')})">
+    <div class="chat-item" data-id="${l.id}" onclick="selectChat('${l.id}',this)">
       <div style="display:flex;align-items:center;gap:8px">
         <div class="avatar" style="width:26px;height:26px;font-size:9px">${(l.nombre||l.contacto||'?').substring(0,2).toUpperCase()}</div>
         <div class="chat-item-name" style="flex:1">${l.nombre||l.contacto}</div>
@@ -1060,6 +1060,12 @@ function renderChatList(leads) {
       <div class="chat-item-preview">${l.intencion||'Sin intención detectada'}</div>
       <div class="chat-item-time">${l.canal} · ${new Date(l.updated_at||l.created_at).toLocaleDateString('es-AR')}</div>
     </div>`).join('');
+}
+
+function selectChat(leadId, el) {
+  const lead = allChatsData.find(l => l.id === leadId);
+  if (!lead) return;
+  loadMensajes(leadId, lead.nombre || lead.contacto || '?', el, lead);
 }
 
 function filtrarChats() {
@@ -1079,6 +1085,7 @@ async function loadMensajes(leadId, nombre, el, leadData) {
   activeChatNombre = nombre;
   document.querySelectorAll('.chat-item').forEach(i=>i.classList.remove('active'));
   el?.classList.add('active');
+  history.pushState({section:'conversaciones', lead:leadId}, '', '#/conversaciones/' + leadId);
 
   // Panel de contacto
   const lead = leadData || allChatsData.find(l=>l.id===leadId) || {};
@@ -1157,19 +1164,9 @@ async function toggleBot(leadId) {
 
 
 
-// ── CITAS ────────────────────────────────────────────
-async function loadCitas() {
-  if (!currentEmpresa) return;
-  const { data } = await sb.from('citas').select('*, leads!inner(nombre,contacto,empresa_id)').eq('empresa_id', currentEmpresa.id).order('fecha_inicio',{ascending:true});
-  const el = document.getElementById('citas-content');
-  if (!data||data.length===0) { el.innerHTML='<div class="empty-state"><i class="ti ti-calendar"></i><p>No hay citas agendadas.</p></div>'; return; }
-  el.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Lead</th><th>Fecha</th><th>Título</th><th>Estado</th><th>Link</th></tr></thead><tbody>${
-    data.map(c=>`<tr><td class="td-primary">${c.leads?.nombre||c.leads?.contacto||'—'}</td><td>${new Date(c.fecha_inicio).toLocaleString('es-AR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</td><td>${c.titulo||'—'}</td><td><span class="badge ${c.estado==='programada'?'badge-green':'badge-red'}">${c.estado}</span></td><td>${c.meet_link?`<a href="${c.meet_link}" target="_blank" style="color:var(--accent2)">Abrir</a>`:'—'}</td></tr>`).join('')
-  }</tbody></table></div>`;
-}
 
 // ── NAVEGACIÓN ───────────────────────────────────────
-const pageTitles={dashboard:'Dashboard',leads:'Leads',conversaciones:'Conversaciones',citas:'Citas',empresa:'Mi empresa',bot:'Bot',canales:'Canales'};
+const pageTitles={dashboard:'Dashboard',leads:'Leads',conversaciones:'Conversaciones',empresa:'Mi empresa',bot:'Bot',canales:'Canales'};
 // ── WHATSAPP QR ───────────────────────────────────────
 const BAILEYS_URL = 'https://diligent-reprieve-production-124f.up.railway.app';
 let qrPollInterval = null;
@@ -1260,8 +1257,8 @@ function showSection(id, el) {
   document.getElementById('page-actions').innerHTML = '';
   if(id==='leads') loadLeads();
   if(id==='conversaciones') loadConversaciones();
-  if(id==='citas') loadCitas();
   if(id==='bot') { loadTagsConfig().then(loadTags); loadAdjuntos(); }
+  history.pushState({section:id}, '', '#/' + id);
 }
 
 // ── ENVÍO MANUAL ─────────────────────────────────────
@@ -1672,7 +1669,7 @@ function renderAdjuntos() {
   }
   el.innerHTML = adjuntosData.map(a => `
     <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
-      <div style="width:34px;height:34px;background:rgba(108,92,231,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <div style="width:34px;height:34px;background:rgba(225,53,157,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <i class="ti ${iconForMime(a.mimetype)}" style="color:var(--accent2)"></i>
       </div>
       <div style="flex:1;min-width:0">
@@ -1820,6 +1817,40 @@ function toggleTheme() {
   const sysLight = window.matchMedia('(prefers-color-scheme: light)').matches;
   applyTheme(saved === 'light' || (!saved && sysLight));
 })();
+
+// ── ROUTING ──────────────────────────────────────────
+function applyRoute(hash) {
+  const parts = (hash || '#/dashboard').replace('#/','').split('/');
+  const section = parts[0] || 'dashboard';
+  const leadId  = parts[1] || null;
+
+  // Activate section silently (without pushing new history entry)
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-' + section)?.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    if (n.getAttribute('onclick')?.includes("'" + section + "'")) n.classList.add('active');
+  });
+  document.getElementById('page-title').textContent = pageTitles[section] || section;
+  document.getElementById('page-actions').innerHTML = '';
+
+  if (section==='leads') loadLeads();
+  if (section==='bot')   { loadTagsConfig().then(loadTags); loadAdjuntos(); }
+  if (section==='conversaciones') {
+    loadConversaciones().then(() => {
+      if (leadId) {
+        const item = document.querySelector(`.chat-item[data-id="${leadId}"]`);
+        if (item) item.click();
+      }
+    });
+  }
+}
+
+window.addEventListener('popstate', () => applyRoute(location.hash));
+
+async function restoreRoute() {
+  if (location.hash && location.hash !== '#/dashboard') applyRoute(location.hash);
+}
 
 // ── INIT ──────────────────────────────────────────────
 document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
