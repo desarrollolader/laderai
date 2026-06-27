@@ -92,6 +92,36 @@ app.post('/send', async (req, res) => {
   }
 })
 
+// POST /send-media
+app.post('/send-media', async (req, res) => {
+  const { phone, url, mimetype, filename, caption } = req.body
+
+  if (!isConnected || !sock) {
+    return res.status(503).json({ error: 'WhatsApp no conectado' })
+  }
+  if (!phone || !url) {
+    return res.status(400).json({ error: 'Faltan phone o url' })
+  }
+
+  try {
+    const jid = phone.includes('@') ? phone : `${phone}@s.whatsapp.net`
+    if (mimetype?.startsWith('image/')) {
+      await sock.sendMessage(jid, { image: { url }, caption: caption || '' })
+    } else if (mimetype?.startsWith('video/')) {
+      await sock.sendMessage(jid, { video: { url }, caption: caption || '' })
+    } else if (mimetype?.startsWith('audio/')) {
+      await sock.sendMessage(jid, { audio: { url }, mimetype: 'audio/mp4' })
+    } else {
+      await sock.sendMessage(jid, { document: { url }, mimetype: mimetype || 'application/octet-stream', fileName: filename || 'documento' })
+    }
+    console.log(`📎 Media enviado a ${phone}: ${filename || url}`)
+    res.json({ success: true, to: jid })
+  } catch (err) {
+    console.error('Error enviando media:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // POST /disconnect — cierra sesión y genera nuevo QR automáticamente
 app.post('/disconnect', async (req, res) => {
   try {

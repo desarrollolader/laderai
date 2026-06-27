@@ -414,14 +414,21 @@ textarea{resize:vertical;min-height:80px;}
                 <select id="chat-filter-tag" onchange="filtrarChats()">
                   <option value="">Todos los tags</option>
                 </select>
+                <select id="chat-filter-bot" onchange="filtrarChats()">
+                  <option value="">Todos los estados</option>
+                  <option value="activo">Bot activo</option>
+                  <option value="pausado">Con humano</option>
+                </select>
               </div>
               <div class="chat-list" id="chat-list"><div class="loading">Cargando...</div></div>
             </div>
             <div class="chat-main">
               <div class="chat-header" id="chat-header"><div style="color:var(--text3);font-size:13px">Seleccioná un lead</div></div>
               <div class="chat-messages" id="chat-messages"></div>
+              <div id="adjuntos-panel" style="display:none;padding:8px 14px;border-top:1px solid var(--border);background:var(--bg3);max-height:200px;overflow-y:auto;"></div>
               <div class="chat-input" id="chat-input" style="display:none">
                 <input placeholder="Responder manualmente..." id="manual-msg" onkeydown="if(event.key==='Enter')enviarManual()">
+                <button class="btn btn-sm" onclick="toggleAdjuntosPanel()" title="Enviar adjunto"><i class="ti ti-paperclip"></i></button>
                 <button class="btn btn-primary btn-sm" onclick="enviarManual()"><i class="ti ti-send"></i></button>
               </div>
             </div>
@@ -550,6 +557,32 @@ textarea{resize:vertical;min-height:80px;}
             <div class="tags-list" id="tags-list"></div>
             <div class="tag-add-btn" onclick="abrirModalNuevoTag()">
               <i class="ti ti-plus"></i> Crear nueva smart tag
+            </div>
+          </div>
+
+          <!-- ADJUNTOS CITABLES -->
+          <div class="card" id="card-adjuntos" style="display:none;margin-top:16px">
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:6px;">
+              <i class="ti ti-paperclip" style="font-size:20px;color:var(--accent);margin-top:2px"></i>
+              <div>
+                <div class="card-title" style="margin-bottom:2px">Adjuntos citables</div>
+                <div style="font-size:12px;color:var(--text3);line-height:1.5">Subí archivos que el bot puede enviar cuando el lead los solicita. Usá la clave en el chat para enviarlos manualmente.</div>
+              </div>
+            </div>
+            <div id="adjuntos-list" style="margin-bottom:16px"></div>
+            <div style="border:1px dashed var(--border2);border-radius:var(--radius-sm);padding:16px;display:flex;flex-direction:column;gap:10px;">
+              <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:500">Subir nuevo adjunto</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div class="form-gi"><label class="form-label">Nombre del archivo</label><input id="adj-nombre" placeholder="Ej: Brochure Palermo"></div>
+                <div class="form-gi"><label class="form-label">Clave de cita</label><input id="adj-clave" placeholder="Ej: /brochure"></div>
+              </div>
+              <div class="form-gi">
+                <label class="form-label">Archivo (PDF, imagen, video, doc)</label>
+                <input type="file" id="adj-file" accept=".pdf,.jpg,.jpeg,.png,.mp4,.doc,.docx,.xls,.xlsx">
+              </div>
+              <button class="btn btn-primary btn-sm" id="btn-subir-adj" onclick="subirAdjunto()" style="align-self:flex-start">
+                <i class="ti ti-upload"></i> Subir archivo
+              </button>
             </div>
           </div>
 
@@ -1030,11 +1063,14 @@ function renderChatList(leads) {
 }
 
 function filtrarChats() {
-  const q   = (document.getElementById('chat-search')?.value||'').toLowerCase();
-  const tag = (document.getElementById('chat-filter-tag')?.value||'');
+  const q     = (document.getElementById('chat-search')?.value||'').toLowerCase();
+  const tag   = (document.getElementById('chat-filter-tag')?.value||'');
+  const botSt = (document.getElementById('chat-filter-bot')?.value||'');
   let filtered = allChatsData;
-  if (q)   filtered = filtered.filter(l=>(l.nombre||l.contacto||'').toLowerCase().includes(q));
-  if (tag) filtered = filtered.filter(l=>(l.intencion||'').toLowerCase().includes(tag.toLowerCase()));
+  if (q)               filtered = filtered.filter(l=>(l.nombre||l.contacto||'').toLowerCase().includes(q));
+  if (tag)             filtered = filtered.filter(l=>(l.intencion||'').toLowerCase().includes(tag.toLowerCase()));
+  if (botSt==='activo')  filtered = filtered.filter(l=>!l.bot_pausado);
+  if (botSt==='pausado') filtered = filtered.filter(l=>!!l.bot_pausado);
   renderChatList(filtered);
 }
 
@@ -1225,7 +1261,7 @@ function showSection(id, el) {
   if(id==='leads') loadLeads();
   if(id==='conversaciones') loadConversaciones();
   if(id==='citas') loadCitas();
-  if(id==='bot') loadTagsConfig().then(loadTags);
+  if(id==='bot') { loadTagsConfig().then(loadTags); loadAdjuntos(); }
 }
 
 // ── ENVÍO MANUAL ─────────────────────────────────────
@@ -1614,6 +1650,150 @@ async function loadTagsConfig() {
   DEFAULT_TAGS.forEach(t => {
     if (config[t.id]?.descripcion) t.descripcion = config[t.id].descripcion;
   });
+}
+
+// ── ADJUNTOS CITABLES ────────────────────────────────
+let adjuntosData = [];
+
+async function loadAdjuntos() {
+  if (!currentEmpresa) return;
+  document.getElementById('card-adjuntos').style.display = 'block';
+  const { data } = await sb.from('adjuntos').select('*').eq('empresa_id', currentEmpresa.id).order('created_at');
+  adjuntosData = data || [];
+  renderAdjuntos();
+}
+
+function renderAdjuntos() {
+  const el = document.getElementById('adjuntos-list');
+  if (!el) return;
+  if (!adjuntosData.length) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px"><i class="ti ti-paperclip" style="font-size:24px;display:block;margin-bottom:8px"></i>Sin adjuntos todavía</div>';
+    return;
+  }
+  el.innerHTML = adjuntosData.map(a => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="width:34px;height:34px;background:rgba(108,92,231,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="ti ${iconForMime(a.mimetype)}" style="color:var(--accent2)"></i>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.nombre}</div>
+        <div style="font-size:11px;color:var(--text3)">${formatBytes(a.tamano)} · <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent2)">${a.clave}</code></div>
+      </div>
+      <button class="btn btn-sm" onclick="copiarClave('${a.clave}')" title="Copiar clave"><i class="ti ti-copy"></i></button>
+      <a href="${a.url}" target="_blank" class="btn btn-sm" title="Ver archivo"><i class="ti ti-eye"></i></a>
+      <button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" onclick="eliminarAdjunto('${a.id}','${a.storage_path}')"><i class="ti ti-trash"></i></button>
+    </div>`).join('');
+}
+
+function iconForMime(mime) {
+  if (!mime) return 'ti-file';
+  if (mime.startsWith('image/')) return 'ti-photo';
+  if (mime.includes('pdf')) return 'ti-file-type-pdf';
+  if (mime.includes('word') || mime.includes('document')) return 'ti-file-type-doc';
+  if (mime.includes('sheet') || mime.includes('excel')) return 'ti-file-type-xls';
+  if (mime.startsWith('video/')) return 'ti-video';
+  return 'ti-file';
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '—';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+function copiarClave(clave) {
+  navigator.clipboard.writeText(clave).then(() => showToast('Clave copiada: ' + clave));
+}
+
+async function subirAdjunto() {
+  const nombre = document.getElementById('adj-nombre').value.trim();
+  const clave  = document.getElementById('adj-clave').value.trim();
+  const file   = document.getElementById('adj-file').files[0];
+  if (!nombre || !clave || !file) { showToast('Completá todos los campos', 'error'); return; }
+  if (!clave.startsWith('/')) { showToast('La clave debe empezar con / (ej: /brochure)', 'error'); return; }
+
+  const btn = document.getElementById('btn-subir-adj');
+  btn.innerHTML = '<i class="ti ti-loader"></i> Subiendo...';
+  btn.disabled = true;
+
+  const ext  = file.name.split('.').pop();
+  const path = `${currentEmpresa.id}/${Date.now()}.${ext}`;
+
+  const { error: uploadErr } = await sb.storage.from('adjuntos').upload(path, file, { upsert: false });
+  if (uploadErr) {
+    showToast('Error al subir: ' + uploadErr.message, 'error');
+    btn.innerHTML = '<i class="ti ti-upload"></i> Subir archivo'; btn.disabled = false; return;
+  }
+
+  const { data: { publicUrl } } = sb.storage.from('adjuntos').getPublicUrl(path);
+
+  const { error: dbErr } = await sb.from('adjuntos').insert({
+    empresa_id: currentEmpresa.id,
+    nombre, clave, url: publicUrl,
+    storage_path: path, mimetype: file.type, tamano: file.size
+  });
+  if (dbErr) {
+    showToast('Error al guardar: ' + dbErr.message, 'error');
+    btn.innerHTML = '<i class="ti ti-upload"></i> Subir archivo'; btn.disabled = false; return;
+  }
+
+  document.getElementById('adj-nombre').value = '';
+  document.getElementById('adj-clave').value  = '';
+  document.getElementById('adj-file').value   = '';
+  btn.innerHTML = '<i class="ti ti-upload"></i> Subir archivo'; btn.disabled = false;
+  await loadAdjuntos();
+  showToast('Adjunto "' + nombre + '" subido correctamente');
+}
+
+async function eliminarAdjunto(id, path) {
+  if (!confirm('¿Eliminar este adjunto?')) return;
+  await sb.storage.from('adjuntos').remove([path]);
+  await sb.from('adjuntos').delete().eq('id', id);
+  adjuntosData = adjuntosData.filter(a => a.id !== id);
+  renderAdjuntos();
+  showToast('Adjunto eliminado');
+}
+
+function toggleAdjuntosPanel() {
+  const panel = document.getElementById('adjuntos-panel');
+  if (panel.style.display !== 'none') { panel.style.display = 'none'; return; }
+  if (!adjuntosData.length) {
+    panel.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:4px 0">No hay adjuntos configurados. Subílos en la sección <b>Bot</b>.</div>';
+  } else {
+    panel.innerHTML = '<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Seleccioná un adjunto para enviar</div>' +
+      adjuntosData.map(a => `
+        <div onclick="enviarAdjunto('${a.id}');toggleAdjuntosPanel()" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
+          <i class="ti ${iconForMime(a.mimetype)}" style="color:var(--accent2);font-size:16px"></i>
+          <span style="font-size:13px;color:var(--text);flex:1">${a.nombre}</span>
+          <code style="font-size:10px;background:var(--bg);padding:2px 6px;border-radius:4px;color:var(--accent2)">${a.clave}</code>
+        </div>`).join('');
+  }
+  panel.style.display = 'block';
+}
+
+async function enviarAdjunto(adjId) {
+  const adj  = adjuntosData.find(a => a.id === adjId);
+  const lead = allChatsData.find(l => l.id === activeChatLeadId);
+  if (!adj || !lead) return;
+
+  try {
+    const r = await fetch(`${BAILEYS_URL}/send-media`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: lead.contacto, url: adj.url, mimetype: adj.mimetype, filename: adj.nombre })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    await sb.from('mensajes').insert({ lead_id: activeChatLeadId, canal: 'whatsapp', direccion: 'saliente', contenido: '📎 ' + adj.nombre + ' (' + adj.clave + ')' });
+    const msgsEl = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = 'msg msg-out';
+    div.innerHTML = '📎 ' + adj.nombre + '<div class="msg-time">' + new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) + ' · Manual</div>';
+    msgsEl.appendChild(div); msgsEl.scrollTop = msgsEl.scrollHeight;
+    showToast('Adjunto enviado: ' + adj.nombre);
+  } catch(e) {
+    showToast('Error al enviar adjunto: ' + e.message, 'error');
+  }
 }
 
 // ── TEMA CLARO / OSCURO ──────────────────────────────
