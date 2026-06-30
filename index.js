@@ -85,6 +85,7 @@ app.post('/send', async (req, res) => {
   try {
     const jid = phone.includes('@') ? phone : `${phone}@s.whatsapp.net`
     await sock.sendMessage(jid, { text: message })
+    console.log(`📤 Mensaje enviado a ${jid}`)
     res.json({ success: true, to: jid })
   } catch (err) {
     console.error('Error enviando mensaje:', err)
@@ -229,17 +230,7 @@ async function conectarWhatsApp () {
       if (msg.key.remoteJid.endsWith('@g.us')) continue
 
       const remoteJid = msg.key.remoteJid
-      let from = remoteJid.replace(/@(s\.whatsapp\.net|lid|c\.us)$/i, '')
-
-      // @lid es un ID interno — intentar resolver el número real
-      if (remoteJid.endsWith('@lid')) {
-        try {
-          const results = await sock.onWhatsApp(remoteJid)
-          if (results && results[0]?.jid) {
-            from = results[0].jid.replace('@s.whatsapp.net', '')
-          }
-        } catch (_) {}
-      }
+      const from = remoteJid.replace(/@(s\.whatsapp\.net|lid|c\.us)$/i, '')
 
       const nombre = msg.pushName || ''
       const msgContent = msg.message
@@ -297,6 +288,7 @@ async function conectarWhatsApp () {
         await axios.post(N8N_WEBHOOK, {
           canal:      'whatsapp',
           from,
+          jid:        remoteJid,
           nombre,
           mensaje:    text,
           timestamp:  Date.now(),
