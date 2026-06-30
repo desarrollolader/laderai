@@ -380,6 +380,7 @@ textarea{resize:vertical;min-height:80px;}
         <div class="nav-section">Configuración</div>
         <div class="nav-item" onclick="showSection('empresa',this)"><i class="ti ti-settings"></i> Mi empresa</div>
         <div class="nav-item" onclick="showSection('bot',this)"><i class="ti ti-robot"></i> Bot</div>
+        <div class="nav-item" onclick="showSection('test',this)"><i class="ti ti-message-chatbot"></i> Test del bot</div>
         <div class="nav-item" onclick="showSection('canales',this)"><i class="ti ti-plug-connected"></i> Canales</div>
       </div>
     </div>
@@ -524,6 +525,36 @@ textarea{resize:vertical;min-height:80px;}
               <p style="font-size:12px;color:var(--text3);">Respondé mensajes directos de Instagram.</p>
             </div>
 
+          </div>
+        </div>
+
+        <!-- TEST DEL BOT -->
+        <div class="section" id="sec-test">
+          <div class="card" style="margin-bottom:14px;background:rgba(225,53,157,.06);border-color:rgba(225,53,157,.25)">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <i class="ti ti-flask" style="font-size:18px;color:var(--accent2)"></i>
+              <div style="font-size:12px;color:var(--text2);line-height:1.5">
+                Conversá con tu bot usando el prompt y las smart tags configuradas <b>ahora mismo</b>.
+                Esta conversación es solo de prueba: no crea leads, no envía WhatsApp ni dispara notificaciones.
+              </div>
+            </div>
+          </div>
+          <div class="chat-layout" style="height:calc(100vh - 200px)">
+            <div class="chat-main" style="border-radius:var(--radius)">
+              <div class="chat-header">
+                <div class="avatar" style="background:rgba(225,53,157,.2)"><i class="ti ti-robot"></i></div>
+                <div>
+                  <div style="font-size:13px;font-weight:500">Asistente de <span id="test-empresa-name">—</span></div>
+                  <div style="font-size:11px;color:var(--text3)">Modo prueba · no se guarda en el CRM</div>
+                </div>
+                <button class="btn btn-sm" style="margin-left:auto" onclick="reiniciarTestChat()"><i class="ti ti-refresh"></i> Reiniciar</button>
+              </div>
+              <div class="chat-messages" id="test-chat-messages"></div>
+              <div class="chat-input">
+                <input id="test-chat-input" placeholder="Escribí como si fueras el lead..." onkeydown="if(event.key==='Enter')enviarTestMsg()">
+                <button class="btn btn-primary btn-sm" onclick="enviarTestMsg()" id="test-send-btn"><i class="ti ti-send"></i></button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1162,11 +1193,69 @@ async function toggleBot(leadId) {
     : '<span style="color:var(--green)"><i class="ti ti-robot"></i> Activo</span>';
 }
 
+// ── TEST CHAT (sandbox, no toca Supabase ni WhatsApp) ────
+const N8N_TEST_WEBHOOK = 'https://primary-production-73794.up.railway.app/webhook/bot-test'; // ajustar al path real del workflow WF-TEST-Chat
+let testChatHistory = [];
 
+function reiniciarTestChat() {
+  testChatHistory = [];
+  const msgsEl = document.getElementById('test-chat-messages');
+  if (msgsEl) msgsEl.innerHTML = '<div class="loading">Escribí un mensaje para empezar la prueba</div>';
+}
 
+async function enviarTestMsg() {
+  if (!currentEmpresa) return;
+  const input = document.getElementById('test-chat-input');
+  const texto = input.value.trim();
+  if (!texto) return;
+  input.value = '';
+  document.getElementById('test-empresa-name').textContent = currentEmpresa.nombre;
+
+  const msgsEl = document.getElementById('test-chat-messages');
+  if (msgsEl.querySelector('.loading')) msgsEl.innerHTML = '';
+
+  appendTestMsg(texto, 'out');
+  testChatHistory.push({ role: 'user', content: texto });
+
+  const btn = document.getElementById('test-send-btn');
+  btn.disabled = true;
+  const typingEl = appendTestMsg('Escribiendo...', 'in', true);
+
+  try {
+    const res = await fetch(N8N_TEST_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        empresa_id: currentEmpresa.id,
+        mensaje: texto,
+        historial: testChatHistory
+      })
+    });
+    const data = await res.json();
+    typingEl.remove();
+    const respuesta = data.respuesta || data.output || 'Sin respuesta del bot.';
+    appendTestMsg(respuesta, 'in');
+    testChatHistory.push({ role: 'assistant', content: respuesta });
+  } catch (e) {
+    typingEl.remove();
+    appendTestMsg('Error al conectar con el bot: ' + e.message, 'in');
+  }
+  btn.disabled = false;
+}
+
+function appendTestMsg(texto, dir, isTyping) {
+  const msgsEl = document.getElementById('test-chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + (dir === 'in' ? 'msg-in' : 'msg-out');
+  if (isTyping) div.style.opacity = '0.5';
+  div.innerHTML = texto + '<div class="msg-time">' + new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) + '</div>';
+  msgsEl.appendChild(div);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+  return div;
+}
 
 // ── NAVEGACIÓN ───────────────────────────────────────
-const pageTitles={dashboard:'Dashboard',leads:'Leads',conversaciones:'Conversaciones',empresa:'Mi empresa',bot:'Bot',canales:'Canales'};
+const pageTitles={dashboard:'Dashboard',leads:'Leads',conversaciones:'Conversaciones',empresa:'Mi empresa',bot:'Bot',test:'Test del bot',canales:'Canales'};
 // ── WHATSAPP QR ───────────────────────────────────────
 const BAILEYS_URL = 'https://diligent-reprieve-production-124f.up.railway.app';
 let qrPollInterval = null;
@@ -1258,6 +1347,7 @@ function showSection(id, el) {
   if(id==='leads') loadLeads();
   if(id==='conversaciones') loadConversaciones();
   if(id==='bot') { loadTagsConfig().then(loadTags); loadAdjuntos(); }
+  if(id==='test') reiniciarTestChat();
   history.pushState({section:id}, '', '#/' + id);
 }
 
@@ -1836,6 +1926,7 @@ function applyRoute(hash) {
 
   if (section==='leads') loadLeads();
   if (section==='bot')   { loadTagsConfig().then(loadTags); loadAdjuntos(); }
+  if (section==='test')  reiniciarTestChat();
   if (section==='conversaciones') {
     loadConversaciones().then(() => {
       if (leadId) {
