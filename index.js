@@ -228,7 +228,19 @@ async function conectarWhatsApp () {
       if (msg.key.fromMe) continue
       if (msg.key.remoteJid.endsWith('@g.us')) continue
 
-      const from   = msg.key.remoteJid.replace('@s.whatsapp.net', '')
+      const remoteJid = msg.key.remoteJid
+      let from = remoteJid.replace(/@(s\.whatsapp\.net|lid|c\.us)$/i, '')
+
+      // @lid es un ID interno — intentar resolver el número real
+      if (remoteJid.endsWith('@lid')) {
+        try {
+          const results = await sock.onWhatsApp(remoteJid)
+          if (results && results[0]?.jid) {
+            from = results[0].jid.replace('@s.whatsapp.net', '')
+          }
+        } catch (_) {}
+      }
+
       const nombre = msg.pushName || ''
       const msgContent = msg.message
 
